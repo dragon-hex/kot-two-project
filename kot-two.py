@@ -16,6 +16,7 @@ K2_DEFAULT_RESFOLDER= './engine-res/'
 # kot2_engine: here is stored the engine.
 class kot2_engine:
     def __init__(self):
+        """ here is the whole engine. """
         self.root_path  = self.__load_core_path()
     def __crash(self, string):
         """
