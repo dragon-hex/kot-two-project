@@ -14,6 +14,7 @@ except Exception as E:
     K2_PYGAME_ERROR     = E
 
 # define some constants here
+K2_VERSION          = ["1.0", 10]
 K2_PYTHON_VERSION   = "%d.%d" % (sys.version_info[0], sys.version_info[1])
 K2_INITIAL_TIME     = time.time_ns()
 # NOTE: the default output is always a file named
@@ -25,7 +26,11 @@ K2_DEFAULT_RESFOLDER= './engine-res/'
 class kot2_engine:
     def __init__(self):
         """ here is the whole engine. """
-        self.root_path  = self.__load_core_path()
+        self.root_path      = self.__load_core_path()
+        self.win_surface    = None
+        self.win_size       = (800, 600)
+        self.win_title      = 'Kot-2 [%s]' % K2_VERSION[0]
+        self.win_icon       = None
     def __crash(self, string):
         """
         write on the crash.
@@ -55,12 +60,29 @@ class kot2_engine:
         if not K2_PYGAME_IMPORTED:
             self.__crash_with_error("couldn't import pygame", K2_PYGAME_ERROR)
         pygame.init()
+    def __generate_winicon(self):
+        import random as __random
+        RES_W   = 125
+        RES_H   = 125
+        SURFACE = pygame.Surface((RES_W, RES_H))
+        SURFACE.fill((__random.randint(1, 255),__random.randint(1, 255),__random.randint(1, 255)))
+        return SURFACE
+    def __init_display(self):
+        """ init the display """
+        self.win_surface = pygame.display.set_mode(self.win_size)
+        pygame.display.set_caption(self.win_title)
+        if self.win_icon:
+            pygame.display.set_icon(self.win_icon)
+        else:
+            self.win_icon = self.__generate_win_icon()
+            pygame.display.set_icon(self.win_icon)
     def run(self):
         """
         execute a series of code functions to make
         the engine run.
         """
         self.__init_pygame()
+        self.__init_display()
 
 # kot2_wrapper: the wrapper can only run it as main
 # and can't run as library
