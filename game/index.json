@@ -1,0 +1,20 @@
+// 2018, 2021 (C) Kot-Two. This is under the license MIT.
+// -- Main World Configuration for a Kot2 Game.
+{
+    "worldInfo": {
+        // the name is shown to the player when the launching phase
+        // and if a crash happens inside the scripts of the game,
+        // the crash will show the site or whatever contact you select.
+        "name":             "Demo!",
+        "created":          "Pipes Studios",
+        "description":      "This is a demo for your kot2!",
+        "site":             null,
+        "icon":             {"type":"image","name":"game_icon", "resolution": 128}
+    },
+    "window": {
+        // load the window properties, such as title, initial size, icon for the window
+        "title":            "Kot2, Demo.",
+        "size":             [800, 600],
+        "icon":             {"type":"image","name":"window_icon","resolution":512}
+    }
+}
