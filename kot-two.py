@@ -15,5 +15,8 @@ except Exception as E:
 # -- begin the wrapper class
 class kot2_wrapper:
     def __init__(self):
-        self.game_core = kot2.engine.core.game_core()
-        self.
+        self.game_core      = kot2.engine.core.game_core()
+    def init(self):
+        """ init all things """
+        self.game_core.init_core()
+        sel
