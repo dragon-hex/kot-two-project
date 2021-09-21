@@ -19,4 +19,3 @@ class kot2_wrapper:
     def init(self):
         """ init all things """
         self.game_core.init_core()
-        sel
