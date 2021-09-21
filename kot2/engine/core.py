@@ -34,6 +34,16 @@ class game_window:
 
 class game_core:
     window      = game_window()
+    # NOTE: what are the modes or 'runlevels'?
+    # on the game, there is three modes that can be ticked and draw, theses are:
+    # Menu (which is the menu that will select your save and have it own stuff)
+    # Game (the game is the world viewer or basically everything)
+    # Credits (if you using the credits, it will show... the credits)
+    modes       = []
+    on_mode     = 0
+    # NOTE: the game control is also, inside this shared class.
+    running     = False
+
     def __pygame_init(self):
         """ attempt to init the pygame module """
         # TODO: handle the possible error on pygame init.
@@ -43,12 +53,18 @@ class game_core:
         """ close the pygame module """
         # TODO: handle some possible error
         pygame.quit()
+    
+    def __load_data(self, initial_info):
+        """ load the initial information for the window """
+        pass
 
-    def init_core(self):
+    def init_core(self, initial_info):
         """ init the window and the pygame module """
         self.__pygame_init()
+        self.__load_data(initial_info)
         self.window.init_window()
     
     def close_core(self):
         """ close some functions of the core """
         self.__pygame_quit()
+        
