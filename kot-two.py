@@ -32,9 +32,26 @@ class kot2_wrapper:
         """ init all things """
         self.engine.game_path = self.__get_game_path()
         self.game_core.init_core(self.__load_initial_info())
+        self.game_core.running = True
+    def __tick(self, ev_list):
+        """ some generic function to update """
+        for ev in ev_list:
+            if ev.type == pygame.QUIT:
+                self.game_core.running = False
+                return
+    def __draw(self):
+        """ some generic function to update """
+        pygame.display.flip()
     def loop(self):
         """ keep the game on loop """
-        pass
+        clock = pygame.time.Clock()
+        while self.game_core.running:
+            # setup the list
+            ev_list = pygame.event.get()
+            self.__tick(ev_list)
+            self.__draw()
+            # TODO: allow the player to change the FPS.
+            clock.tick(60)
     def quit(self):
         """ basically quit the game """
         self.game_core.close_core()
