@@ -116,13 +116,16 @@ class content:
             self.cache[cache_name][1] += (30 * 1000)
             return self.cache.get(cache_name)[0]
         else:
+            # TODO: compress this function on the future.
             if what_type == CONTENT_TYPE_IMAGE:
                 status, cache_created = self.__get_image_raw(name, use_prefix=force_dir)
                 # check if the cache was created (aka, the image)
                 if status != 0: return status
-                self.cache[cache_name]=(cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE)
+                self.cache[cache_name]=[cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE]
                 return cache_created
             elif what_type == CONTENT_TYPE_FONT:
                 status, cache_created = self.__get_font_raw(name, font_size)
                 # check if the font was created (aka, the font)
                 if status != 0: return status
+                self.cache[cache_name]=[cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE]
+                return cache_created
