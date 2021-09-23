@@ -39,6 +39,7 @@ class game_core:
     # Menu (which is the menu that will select your save and have it own stuff)
     # Game (the game is the world viewer or basically everything)
     # Credits (if you using the credits, it will show... the credits)
+    initial_config_dict = None
     modes       = []
     on_mode     = 0
     # NOTE: the game control is also, inside this shared class.
@@ -56,7 +57,9 @@ class game_core:
     
     def __load_data(self, initial_info):
         """ load the initial information for the window """
-        pass
+        self.initial_config_dict    = initial_info
+        self.window.window_size     = initial_info["window"].get("size")
+        self.window.window_title    = initial_info["window"].get("title")
 
     def init_core(self, initial_info):
         """ init the window and the pygame module """
