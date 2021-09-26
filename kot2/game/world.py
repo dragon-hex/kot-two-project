@@ -58,6 +58,7 @@ class m_world:
             rendered = self.debug_info_font.render(text,FANCY_DEBUG,(0, 0, 0))
             self.debug_surf.blit(rendered,(0,h_space))
             h_space += rendered.get_height()
+        # setup the window now.
         self.game_core.window.surface.blit(self.debug_surf,(0,0))
     def draw(self):
         """ draw the game frame """
