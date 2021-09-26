@@ -27,7 +27,7 @@ class m_world:
         self.tick_time = 0
         self.draw_time = 0
         # init the debug info surface
-        self.show_debug_info = True
+        self.show_debug_info = False
         self.debug_surf = pygame.Surface((128*2,128))
     def init(self):
         """ initialize the worlds and the principal engine """
@@ -41,6 +41,9 @@ class m_world:
             if ev.type == pygame.QUIT:
                 self.game_core.running = False
                 return
+            if ev.type == pygame.KEYDOWN:
+                if ev.key == pygame.K_F3:
+                    self.show_debug_info = not self.show_debug_info 
         # TODO: check only for the ticks on the world
         self.tick_time = pygame.time.get_ticks() - time_0
     # -- draw functions
