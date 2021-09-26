@@ -18,7 +18,7 @@ except Exception as E:
 class kot2_wrapper:
     def __init__(self):
         self.game_core          = kot2.engine.core.game_core()
-        self.engine             = kot2.system.content.content()
+        self.content            = kot2.system.content.content()
     def __get_game_path(self):
         """ basically, get the game path """
         return os.path.abspath("./game") + "/"
@@ -26,13 +26,22 @@ class kot2_wrapper:
         """ the initial game info is found inside the game folder, on the
             index.json file, there is contained the information for the
             window size, title and etc. """
-        initial_info = kot2.util.cjson.jsonc_get(self.engine.game_path+"index.json")
+        initial_info = kot2.util.cjson.jsonc_get(self.content.game_path+"index.json")
         return initial_info
     def init(self):
         """ init all things """
-        self.engine.game_path = self.__get_game_path()
+        self.content.game_path = self.__get_game_path()
         self.game_core.init_core(self.__load_initial_info())
         self.game_core.running = True
+        self.main_game  = kot2.game.world.m_world(self.content,self.game_core)
+        self.main_game.init()
+        # setup the rooms
+        self.game_core.modes = [
+            # 1° mode is the game itself
+            [self.main_game.tick, self.main_game.draw],
+            # 2° mode is the menu
+            # 3° mode is the credits
+        ]
     def __tick(self, ev_list):
         """ some generic function to update """
         for ev in ev_list:
@@ -48,8 +57,8 @@ class kot2_wrapper:
         while self.game_core.running:
             # setup the list
             ev_list = pygame.event.get()
-            self.__tick(ev_list)
-            self.__draw()
+            self.game_core.modes[self.game_core.on_mode][0](ev_list)
+            self.game_core.modes[self.game_core.on_mode][1]()
             # TODO: allow the player to change the FPS.
             clock.tick(60)
     def quit(self):
