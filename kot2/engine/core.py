@@ -22,7 +22,7 @@ class game_window:
 
     def init_window(self):
         """ init the window """
-        surface = pygame.display.set_mode(self.window_size)
+        self.surface = pygame.display.set_mode(self.window_size)
         pygame.display.set_caption(self.window_title)
         if self.window_icon:
             # case the icon is included.
