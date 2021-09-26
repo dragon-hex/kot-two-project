@@ -17,7 +17,7 @@ ERROR_OPENING_RESOURCE  = -2
 
 # some constants (that can be changed on the init)
 AVG_TIME_IN_CACHE       = 30 * 1000
-DEBUG_CORE              = False
+DEBUG_CORE              = True
 
 class content:
     def __init__(self):
@@ -88,13 +88,14 @@ class content:
         possible_dir    = self.game_path + "fonts/" + name + ".ttf"
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
+        font = None
         if DEBUG_CORE:
             # NOTE: this is the same thing on the other functions
             # that can raise exceptions :-)
-            font = pygame.font.Font(name, font_size)
+            font = pygame.font.Font(possible_dir, font_size)
         else:
             try:
-                font = pygame.font.Font(name, font_size)
+                font = pygame.font.Font(possible_dir, font_size)
             except Exception as E:
                 self.__handle_exception("__get_font_raw()",E)
         return 0, font
@@ -107,10 +108,11 @@ class content:
 
         font_size: case you using fonts.
         """
+        print(kwargs.get("font_size"))
         font_size   = kwargs.get("font_size") or 12
         force_dir   = kwargs.get("force_dir") or "images"
         if what_type == CONTENT_TYPE_IMAGE:  cache_name = "img_%d" % name
-        elif what_type == CONTENT_TYPE_FONT: cache_name = "font_%d_%d" % (name, font_size)
+        elif what_type == CONTENT_TYPE_FONT: cache_name = "font_%s_%d" % (name, font_size)
         if self.cache.get(cache_name):
             # NOTE: when the cache is used again, put a 30 seconds more in the memory.
             self.cache[cache_name][1] += (30 * 1000)
@@ -129,3 +131,18 @@ class content:
                 if status != 0: return status
                 self.cache[cache_name]=[cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE]
                 return cache_created
+    
+    def get_image(self, name):
+        """
+        this will return the image, but if there is no image, then the function
+        is going to return None, make sure to use get_image_safe() for return a
+        'safe' image.
+        """
+        return self.get_content(name, CONTENT_TYPE_IMAGE)
+    
+    def get_font(self, name, size):
+        """
+        this will return a font, but if there is no font, then it will return
+        None.
+        """
+        return self.get_content(name, CONTENT_TYPE_FONT, font_size=size)
