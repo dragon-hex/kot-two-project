@@ -23,6 +23,10 @@ class game_window:
     def init_window(self):
         """ init the window """
         self.surface = pygame.display.set_mode(self.window_size)
+        self.update_window_prop()
+    
+    def update_window_prop(self):
+        """ update the window properties """
         pygame.display.set_caption(self.window_title)
         if self.window_icon:
             # case the icon is included.
@@ -31,6 +35,11 @@ class game_window:
             # install a missing icon.
             self.__install_icon()
             pygame.display.set_icon(self.window_icon)
+    
+    def update_window_icon(self, new_icon):
+        """ update the window icon """
+        self.window_icon = new_icon
+        pygame.display.set_icon(self.window_icon)
 
 class game_core:
     window      = game_window()
@@ -42,6 +51,7 @@ class game_core:
     initial_config_dict = None
     modes       = []
     on_mode     = 0
+    project_img = None
     # NOTE: the game control is also, inside this shared class.
     running     = False
 
@@ -66,6 +76,14 @@ class game_core:
         self.__pygame_init()
         self.__load_data(initial_info)
         self.window.init_window()
+    
+    def post_init(self, content_provider):
+        """ just load some missing elements """
+        self.project_img    = content_provider.get_content_by_spec(self.initial_config_dict['project'].get("icon"))
+        # get the window properties
+        # this will update the icon of the window.
+        self.window.window_icon = content_provider.get_content_by_spec(self.initial_config_dict['window'].get("icon"))
+        self.window.update_window_prop()
     
     def close_core(self):
         """ close some functions of the core """
