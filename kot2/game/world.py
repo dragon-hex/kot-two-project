@@ -1,8 +1,28 @@
 # import pygame
 import pygame
+
+# -- import module stuff
+import kot2.util
+
 # -- configuration
 FANCY_DEBUG         = False                     # case you debug fonts to be antialised.
 VERSION             = '1.0'                     # set the version here
+
+# -- m_world_storage: store all the map properties
+# such as player local properties, camera position
+# and more stuff.
+class m_world_storage:
+    def __init__(self):
+        # store the map name
+        self.name = None
+        self.generic_name = None
+        # map size and it textures
+        self.size = [0, 0]
+        self.res_size = 0
+        self.tex_data = None
+        # the entities
+        self.entities = []
+        self.elements = []
 
 # -- m_world class begins
 class m_world:
@@ -20,6 +40,7 @@ class m_world:
         self.worlds = {}
         self.on_world = ''
         self.world = None
+        self.world_bg = None
         # variables for statistics
         self.world_ticks = 0
         self.world_draw = 0
@@ -33,6 +54,35 @@ class m_world:
         """ initialize the worlds and the principal engine """
         # init the debug info variables
         self.debug_info_font = self.content.get_font("normal",14)
+        # init the maps
+        # TODO: load the map from the player saving.
+        self.__load_initial_map()
+    def __load_initial_map(self):
+        """ this function will only activate when the map is not loaded yet """
+        initial_information = self.game_core.initial_config_dict['initial_settings']
+        self.load_map(initial_information.get("load_map"))
+    def __generate_background(self, world_storage):
+        """ this function will generate a background for a certain level, for
+            save memory, the space is one per map."""
+        size = world_storage.size
+        
+        for yindex in range(0, size[1]):
+            for xindex in range(0,size[0]):
+                pass
+    def load_map(self, map_name):
+        """ the map load data is something like this:
+            {"name":X,...} properties. """
+        target_map_dir  = self.content.game_path + "data/" + map_name + ".json"
+        target_data     = kot2.util.cjson.jsonc_get(target_map_dir)
+        # begin to extract the map information here
+        # and build it using the class.
+        proto_world = m_world_storage()
+        proto_world.name = target_data['properties']['name']
+        proto_world.size = target_data['properties']['size']
+        proto_world.tex_data = target_data['properties']['floor_tile_texture']
+        # begin to generate a world
+        self.__generate_background(proto_world)
+        
     # -- tick functions
     def tick(self, ev_list):
         """ do all the game processing here """
