@@ -88,4 +88,3 @@ class game_core:
     def close_core(self):
         """ close some functions of the core """
         self.__pygame_quit()
-        
