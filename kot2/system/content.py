@@ -10,6 +10,9 @@ import os
 
 CONTENT_TYPE_IMAGE      = 1
 CONTENT_TYPE_FONT       = 2
+CONTENT_TYPE_NAME_IMAGE = 'image'
+CONTENT_TYPE_NAME_SPRITE= 'sprite'
+CONTENT_TYPE_NAME_FONT  = 'font'
 
 # list of possible errors
 RESOURCE_NOT_FOUND      = -1
@@ -68,8 +71,10 @@ class content:
     def __get_image_raw(self, name, use_prefix=None):
         """ try to import the image and all the stuff """
         possible_dir    = self.game_path + (use_prefix or "images/") + name + ".png"
+        self.__write_log("providing content for image: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
+        images = None
         if DEBUG_CORE:
             # NOTE: debug doesn't allow to handle certain crash
             # for better view of the core crashes.
@@ -86,6 +91,7 @@ class content:
     def __get_font_raw(self, name, font_size):
         """ try to import a new font """
         possible_dir    = self.game_path + "fonts/" + name + ".ttf"
+        self.__write_log("providing content for font: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
         font = None
@@ -110,8 +116,8 @@ class content:
         """
         print(kwargs.get("font_size"))
         font_size   = kwargs.get("font_size") or 12
-        force_dir   = kwargs.get("force_dir") or "images"
-        if what_type == CONTENT_TYPE_IMAGE:  cache_name = "img_%d" % name
+        force_dir   = kwargs.get("force_dir") or "images/"
+        if what_type == CONTENT_TYPE_IMAGE:  cache_name = "img_%s" % name
         elif what_type == CONTENT_TYPE_FONT: cache_name = "font_%s_%d" % (name, font_size)
         if self.cache.get(cache_name):
             # NOTE: when the cache is used again, put a 30 seconds more in the memory.
@@ -140,9 +146,43 @@ class content:
         """
         return self.get_content(name, CONTENT_TYPE_IMAGE)
     
+    def get_sprite(self, name, resolution):
+        """
+        return the sprite by it's name and it's resolution.
+        """
+        image_surf = self.get_image(name, force_dir="sprites/")
+        x_div   = image_surf.get_width()  // resolution
+        y_div   = image_surf.get_height() // resolution
+        surf_d  = pygame.Surface((resolution, resolution), pygame.SRCALPHA) 
+        cuts    = []
+        for y_index in range(0,y_div):
+            for x_index in range(0, x_div):
+                surf_d.blit(
+                    image_surf,
+                    (resolution * x_index,resolution * y_index)
+                )
+                cuts.append(surf_d.copy())
+        return cuts
+        
     def get_font(self, name, size):
         """
         this will return a font, but if there is no font, then it will return
         None.
         """
         return self.get_content(name, CONTENT_TYPE_FONT, font_size=size)
+    
+    def get_content_by_spec(self, spec):
+        """
+        return the element given by a specification, like:
+        {'type':'image','name':'my_image',res:128}
+        """
+        type_content = spec.get('type')
+        name_content = spec.get('name')
+        reso_content = spec.get('res') or 64
+        # decide what to return
+        if type_content == CONTENT_TYPE_NAME_IMAGE:
+            # TODO: also, implement a key to decide when the image is
+            # to exported as safe or not.
+            return self.get_image(name_content)
+        elif type_content == CONTENT_TYPE_NAME_SPRITE:
+            return self.get_sprite(name_content, reso_content)
