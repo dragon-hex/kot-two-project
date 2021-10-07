@@ -1,6 +1,7 @@
 # import pygame
 import pygame
 import sys
+import random
 
 # -- import module stuff
 import kot2.util
@@ -78,11 +79,22 @@ class m_world:
         # NOTE: this should debug the end also.
         self.debug.write("generating the background map.")
         size        = world_storage.size
+        res_size    = world_storage.res_size
         surfaces    = self.content.get_content_by_spec(world_storage.tex_data)
-        print("loaded surfaces: %s" % str(surfaces))
-        for yindex in range(0, size[1]):
-            for xindex in range(0,size[0]):
-                pass
+        self.world_bg = pygame.Surface((
+            size[0] * res_size,
+            size[1] * res_size
+        ))
+        for y_index in range(0, size[1]):
+            for x_index in range(0,size[0]):
+                surface_selected = random.choice(surfaces)
+                self.world_bg.blit(
+                    surface_selected,
+                    (
+                        x_index * res_size,
+                        y_index * res_size
+                    )
+                )
 
     def load_map(self, map_name):
         """ the map load data is something like this:
@@ -93,9 +105,10 @@ class m_world:
         # begin to extract the map information here
         # and build it using the class.
         proto_world = m_world_storage()
-        proto_world.name = target_data['properties']['name']
-        proto_world.size = target_data['properties']['map_size']
-        proto_world.tex_data = target_data['properties']['floor_tile_texture']
+        proto_world.name        = target_data['properties']['name']
+        proto_world.size        = target_data['properties']['map_size']
+        proto_world.tex_data    = target_data['properties']['floor_tile_texture']
+        proto_world.res_size    = target_data['properties']['floor_tile_texture_res']
         # begin to generate a world
         self.__generate_background(proto_world)
         
