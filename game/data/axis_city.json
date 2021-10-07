@@ -12,6 +12,6 @@
         // the size of texture
         "floor_tile_texture_res": 64,
         // set the texture for the floor tiles.
-        "floor_tile_texture"    : {"type":"sprites","name":"axc_grass0","res":"64"}
+        "floor_tile_texture"    : {"type":"sprite","name":"axc_grass0","res":64}
     }
 }
