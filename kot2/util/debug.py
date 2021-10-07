@@ -17,7 +17,7 @@ class debug_instance:
             use with responsability! """
         if self.output_en:
             try:
-                self.output_to.write("(%s) [%s]: %s\n" % (
+                self.output_to.write("(%s) %s: %s\n" % (
                     self.__get_timestamp(),self.name_module,string
                 ))
             except:
