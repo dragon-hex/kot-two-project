@@ -1,8 +1,9 @@
 # as like all the modules, import pygame
 import pygame
 # import some other modules
+import kot2.util
 from time import gmtime, strftime
-import os
+import os, sys
 
 # -- begin content storage & provider class:
 # provides a image or some asset for the game
@@ -20,47 +21,33 @@ ERROR_OPENING_RESOURCE  = -2
 
 # some constants (that can be changed on the init)
 AVG_TIME_IN_CACHE       = 30 * 1000
-DEBUG_CORE              = True
+DEBUG_THIS_FILE         = True
 
 class content:
     def __init__(self):
         # keep on the cache some stuff
         # for a determined amount of time.
-        self.__output           = None
-        self.__output_enabled   = False
+        # init the game path.
         self.game_path          = None
         self.cache              = {
             # CACHE STORE: <NAME_CACHE_REF>: [<CACHE_DATA>, <LIFESPAN_TIME>]
             # NOTE: -1 is permanent on the cache.
             'null': [0, -1]
         }
+        # init the debug system
+        self.debug = kot2.util.debug.debug_instance()
+        self.debug.name_module = "content-provider"
+        self.debug.output_to = sys.stdout if DEBUG_THIS_FILE else None
+        self.debug.output_en = DEBUG_THIS_FILE
     
     def __handle_exception(self, at, exception):
         """ if you hooked a function to the listener... """
         # TODO: finish this.
         pass
-
-    def __get_timestamp(self):
-        """ return the time written something (function mostly used by the log function) """
-        return strftime("%Y/%m/%d %H:%M:%S",gmtime())
-    
-    def __write_log(self, the_log):
-        """ write some log to the output. """
-        if self.__output_enabled:
-            text = "(%s) content-provider: %s" % (self.__get_timestamp(),the_log)
-            if DEBUG_CORE:
-                # NOTE: this is right, we want to know if some problem
-                # happen during the write time.
-                self.__output.write(text+"\n")
-            else:
-                try:
-                    self.__output.write(text+"\n")
-                except Exception as E:
-                    self.__handle_exception("__write_log()",E)
     
     def __sandbox_action(self, function, function_name):
         """ function to make the functions smaller, dummi. """
-        if DEBUG_CORE:
+        if DEBUG_THIS_FILE:
             return function()
         else:
             try:
@@ -71,11 +58,11 @@ class content:
     def __get_image_raw(self, name, use_prefix=None):
         """ try to import the image and all the stuff """
         possible_dir    = self.game_path + (use_prefix or "images/") + name + ".png"
-        self.__write_log("providing content for image: %s" % possible_dir)
+        self.debug.write("providing content for image: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
         images = None
-        if DEBUG_CORE:
+        if DEBUG_THIS_FILE:
             # NOTE: debug doesn't allow to handle certain crash
             # for better view of the core crashes.
             images = pygame.image.load(possible_dir)
@@ -91,11 +78,11 @@ class content:
     def __get_font_raw(self, name, font_size):
         """ try to import a new font """
         possible_dir    = self.game_path + "fonts/" + name + ".ttf"
-        self.__write_log("providing content for font: %s" % possible_dir)
+        self.debug.write("providing content for font: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
         font = None
-        if DEBUG_CORE:
+        if DEBUG_THIS_FILE:
             # NOTE: this is the same thing on the other functions
             # that can raise exceptions :-)
             font = pygame.font.Font(possible_dir, font_size)
@@ -114,7 +101,6 @@ class content:
 
         font_size: case you using fonts.
         """
-        print(kwargs.get("font_size"))
         font_size   = kwargs.get("font_size") or 12
         force_dir   = kwargs.get("force_dir") or "images/"
         if what_type == CONTENT_TYPE_IMAGE:  cache_name = "img_%s" % name
@@ -138,31 +124,34 @@ class content:
                 self.cache[cache_name]=[cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE]
                 return cache_created
     
-    def get_image(self, name):
+    def get_image(self, name, force_dir=None):
         """
         this will return the image, but if there is no image, then the function
         is going to return None, make sure to use get_image_safe() for return a
         'safe' image.
         """
-        return self.get_content(name, CONTENT_TYPE_IMAGE)
+        return self.get_content(name, CONTENT_TYPE_IMAGE, force_dir=force_dir)
     
     def get_sprite(self, name, resolution):
         """
         return the sprite by it's name and it's resolution.
         """
         image_surf = self.get_image(name, force_dir="sprites/")
-        x_div   = image_surf.get_width()  // resolution
-        y_div   = image_surf.get_height() // resolution
-        surf_d  = pygame.Surface((resolution, resolution), pygame.SRCALPHA) 
-        cuts    = []
-        for y_index in range(0,y_div):
-            for x_index in range(0, x_div):
-                surf_d.blit(
-                    image_surf,
-                    (resolution * x_index,resolution * y_index)
-                )
-                cuts.append(surf_d.copy())
-        return cuts
+        if not image_surf:
+            return None
+        # cut the texture here.
+        tex_cut = []
+        for y_index in range(0,image_surf.get_height()//resolution):
+            for x_index in range(0,image_surf.get_width()//resolution):
+                cuten_surface = pygame.Surface((resolution,resolution),pygame.SRCALPHA)
+                cuten_surface.blit(image_surf,(-(x_index*resolution),-(y_index*resolution)))
+                tex_cut.append(cuten_surface)
+        # NOTE: keep this debug for the next versions and forever.
+        # this will debug for the future advanced sprite mapper.
+        self.debug.write("sprite %s (cut in %d) resulted in %d surfaces" % (
+            name, resolution, len(tex_cut)
+        ))
+        return tex_cut
         
     def get_font(self, name, size):
         """
@@ -179,6 +168,8 @@ class content:
         type_content = spec.get('type')
         name_content = spec.get('name')
         reso_content = spec.get('res') or 64
+        # show some debug message here
+        self.debug.write("providing by spec: %s" % str(spec))
         # decide what to return
         if type_content == CONTENT_TYPE_NAME_IMAGE:
             # TODO: also, implement a key to decide when the image is
