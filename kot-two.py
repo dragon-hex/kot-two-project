@@ -1,5 +1,8 @@
 # import some python modules
 import os
+# some initial constants
+DEBUG_THIS_FILE = True
+
 # check for pygame
 try:    import pygame 
 except Exception as E:
@@ -173,6 +176,15 @@ class kot2_wrapper:
         """ run everything """
         # TODO: show the crash also, on possibly the init stage on the future
         # by using tkinter or even QT.
+        if DEBUG_THIS_FILE:
+            self.init()
+            self.loop()
+            self.quit()
+        else:
+            # not debug?
+            self.__run_fancy_version()
+    def __run_fancy_version(self):
+        """ this is the continuation of the run function """
         at_step         = 0
         try:
             self.init()     ; at_step += 1
