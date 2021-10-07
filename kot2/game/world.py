@@ -26,6 +26,9 @@ class m_world_storage:
         # the entities
         self.entities = []
         self.elements = []
+        # player stuff.
+        self.camera_pos     = [0, 0]
+        self.player_speed   = 4
 
 # -- m_world class begins
 class m_world:
@@ -45,8 +48,8 @@ class m_world:
         self.world = None
         self.world_bg = None
         # variables for statistics
-        self.world_ticks = 0
-        self.world_draw = 0
+        self.world_ticks_counter = 0
+        self.world_draw_counter = 0
         # calculate the tick time.
         self.tick_time = 0
         self.draw_time = 0
@@ -72,6 +75,7 @@ class m_world:
         self.debug.write("initializing the game for the first time!")
         initial_information = self.game_core.initial_config_dict['initial_settings']
         self.load_map(initial_information.get("load_map"))
+        self.load_map("boo_city")
 
     def __generate_background(self, world_storage):
         """ this function will generate a background for a certain level, for
@@ -111,8 +115,29 @@ class m_world:
         proto_world.res_size    = target_data['properties']['floor_tile_texture_res']
         # begin to generate a world
         self.__generate_background(proto_world)
+        # append on the world storage
+        self.worlds[map_name] = proto_world
+        self.world = self.worlds[map_name]
+        self.on_world = map_name
+    
+    def set_map(self, name):
+        """ set the map and not load it again from the file. """
+        self.world = self.worlds[name]
+        self.on_world = name
+    
+    def alternate_map(self):
+        # HACK: choice function don't support dumb
+        # tuples.
+        list_words = random.choice(list(self.worlds.keys()))
+        self.debug.write("loading random selected world: %s\n" % list_words)
+        self.set_map(list_words)
         
     # -- tick functions
+    def try_move(self, x_dir, y_dir):
+        """ try to move the player to some direction """
+        self.world.camera_pos[0] += x_dir
+        self.world.camera_pos[1] += y_dir
+
     def tick(self, ev_list):
         """ do all the game processing here """
         time_0 = pygame.time.get_ticks()
@@ -122,7 +147,13 @@ class m_world:
                 return
             if ev.type == pygame.KEYDOWN:
                 if ev.key == pygame.K_F3:
-                    self.show_debug_info = not self.show_debug_info 
+                    self.show_debug_info = not self.show_debug_info
+                if ev.key == pygame.K_F4:
+                    self.alternate_map()
+        # check the other clicks (for the player) here
+        keys_pressed    = pygame.key.get_pressed()
+        if keys_pressed[pygame.K_UP] or keys_pressed[pygame.K_w]:
+            self.try_move(0, self.world.player_speed)
         # TODO: check only for the ticks on the world
         self.tick_time = pygame.time.get_ticks() - time_0
 
@@ -133,6 +164,7 @@ class m_world:
         self.debug_surf.fill((0xFF,0xFF,0xFF))
         texts = [
             "Kot2 '%s'" % VERSION,
+            "On Map: %s" % self.on_world,
             "Tick: %d" % self.tick_time,
             "Draw: %d" % self.draw_time
         ]
@@ -144,9 +176,14 @@ class m_world:
         # setup the window now.
         self.game_core.window.surface.blit(self.debug_surf,(0,0))
     
+    def world_draw(self):
+        self.game_core.window.surface.blit(self.world_bg,self.world.camera_pos)
+
     def draw(self):
         """ draw the game frame """
         self.game_core.window.surface.fill((0, 0, 0))
+        # draw the world
+        self.world_draw()
         # draw the debug text if possible
         if self.show_debug_info:
             self.draw_debug_info()
