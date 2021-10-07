@@ -1,5 +1,6 @@
 # import pygame
 import pygame
+import sys
 
 # -- import module stuff
 import kot2.util
@@ -7,6 +8,7 @@ import kot2.util
 # -- configuration
 FANCY_DEBUG         = False                     # case you debug fonts to be antialised.
 VERSION             = '1.0'                     # set the version here
+DEBUG_THIS_FILE     = True                      # to debug the most internal functions, see here.
 
 # -- m_world_storage: store all the map properties
 # such as player local properties, camera position
@@ -50,6 +52,12 @@ class m_world:
         # init the debug info surface
         self.show_debug_info = False
         self.debug_surf = pygame.Surface((128*2,128))
+        # real deep down debug
+        self.debug = kot2.util.debug.debug_instance()
+        self.debug.output_to = sys.stdout if DEBUG_THIS_FILE else None
+        self.debug.output_en = DEBUG_THIS_FILE
+        self.debug.name_module = "world"
+
     def init(self):
         """ initialize the worlds and the principal engine """
         # init the debug info variables
@@ -57,28 +65,36 @@ class m_world:
         # init the maps
         # TODO: load the map from the player saving.
         self.__load_initial_map()
+
     def __load_initial_map(self):
         """ this function will only activate when the map is not loaded yet """
+        self.debug.write("initializing the game for the first time!")
         initial_information = self.game_core.initial_config_dict['initial_settings']
         self.load_map(initial_information.get("load_map"))
+
     def __generate_background(self, world_storage):
         """ this function will generate a background for a certain level, for
             save memory, the space is one per map."""
-        size = world_storage.size
-        
+        # NOTE: this should debug the end also.
+        self.debug.write("generating the background map.")
+        size        = world_storage.size
+        surfaces    = self.content.get_content_by_spec(world_storage.tex_data)
+        print("loaded surfaces: %s" % str(surfaces))
         for yindex in range(0, size[1]):
             for xindex in range(0,size[0]):
                 pass
+
     def load_map(self, map_name):
         """ the map load data is something like this:
             {"name":X,...} properties. """
+        self.debug.write("opening map = %s!" % map_name)
         target_map_dir  = self.content.game_path + "data/" + map_name + ".json"
         target_data     = kot2.util.cjson.jsonc_get(target_map_dir)
         # begin to extract the map information here
         # and build it using the class.
         proto_world = m_world_storage()
         proto_world.name = target_data['properties']['name']
-        proto_world.size = target_data['properties']['size']
+        proto_world.size = target_data['properties']['map_size']
         proto_world.tex_data = target_data['properties']['floor_tile_texture']
         # begin to generate a world
         self.__generate_background(proto_world)
@@ -96,6 +112,7 @@ class m_world:
                     self.show_debug_info = not self.show_debug_info 
         # TODO: check only for the ticks on the world
         self.tick_time = pygame.time.get_ticks() - time_0
+
     # -- draw functions
     def draw_debug_info(self):
         """ the debug info is drawn after the viewport so the debug info
@@ -113,6 +130,7 @@ class m_world:
             h_space += rendered.get_height()
         # setup the window now.
         self.game_core.window.surface.blit(self.debug_surf,(0,0))
+    
     def draw(self):
         """ draw the game frame """
         self.game_core.window.surface.fill((0, 0, 0))
