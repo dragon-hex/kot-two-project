@@ -47,6 +47,7 @@ class content:
     
     def __sandbox_action(self, function, function_name):
         """ function to make the functions smaller, dummi. """
+        self.debug.write("sandbox'ed action = %s" % function_name)
         if DEBUG_THIS_FILE:
             return function()
         else:
@@ -61,19 +62,10 @@ class content:
         self.debug.write("providing content for image: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
-        images = None
-        if DEBUG_THIS_FILE:
-            # NOTE: debug doesn't allow to handle certain crash
-            # for better view of the core crashes.
-            images = pygame.image.load(possible_dir)
-        else:
-            try:
-                images = pygame.image.load(possible_dir)
-            except Exception as E:
-                # just in case the function fails to load the image...
-                self.__handle_exception("__get_image_raw()",E)
-                return ERROR_OPENING_RESOURCE, None
-        return 0, images
+        # -- begin here to get the image.
+        def __get_image(): return pygame.image.load(possible_dir)
+        image = self.__sandbox_action(__get_image, "__get_image_raw(%s)" % possible_dir)
+        return 0, image
     
     def __get_font_raw(self, name, font_size):
         """ try to import a new font """
@@ -81,19 +73,11 @@ class content:
         self.debug.write("providing content for font: %s" % possible_dir)
         if not os.path.exists(possible_dir):
             return RESOURCE_NOT_FOUND, None
-        font = None
-        if DEBUG_THIS_FILE:
-            # NOTE: this is the same thing on the other functions
-            # that can raise exceptions :-)
-            font = pygame.font.Font(possible_dir, font_size)
-        else:
-            try:
-                font = pygame.font.Font(possible_dir, font_size)
-            except Exception as E:
-                self.__handle_exception("__get_font_raw()",E)
+        # -- get the font here
+        def __get_font(): return pygame.font.Font(possible_dir, font_size)
+        font = self.__sandbox_action(__get_font,"__get_font(%s,%s)" % (possible_dir, str(font_size)))
         return 0, font
 
-    
     def get_content(self, name, what_type, **kwargs):
         """
         this will get the content and store on the cache
