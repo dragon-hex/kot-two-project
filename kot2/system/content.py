@@ -11,6 +11,7 @@ import os, sys
 
 CONTENT_TYPE_IMAGE      = 1
 CONTENT_TYPE_FONT       = 2
+CONTENT_TYPE_SPRITE     = 3
 CONTENT_TYPE_NAME_IMAGE = 'image'
 CONTENT_TYPE_NAME_SPRITE= 'sprite'
 CONTENT_TYPE_NAME_FONT  = 'font'
@@ -87,14 +88,16 @@ class content:
         """
         font_size   = kwargs.get("font_size") or 12
         force_dir   = kwargs.get("force_dir") or "images/"
-        if what_type == CONTENT_TYPE_IMAGE:  cache_name = "img_%s" % name
-        elif what_type == CONTENT_TYPE_FONT: cache_name = "font_%s_%d" % (name, font_size)
+        if      what_type == CONTENT_TYPE_IMAGE:    cache_name  = "i_%s" % name
+        elif    what_type == CONTENT_TYPE_FONT :    cache_name  = "f%d_%s" % (font_size, name)
+        elif    what_type == CONTENT_TYPE_SPRITE:   cache_name  = "s_%s" % name
+        else:   return -1
+        # -- try to check from the cache --
         if self.cache.get(cache_name):
-            # NOTE: when the cache is used again, put a 30 seconds more in the memory.
             self.cache[cache_name][1] += (30 * 1000)
             return self.cache.get(cache_name)[0]
         else:
-            # TODO: compress this function on the future.
+            # case the cache isn't here for us.
             if what_type == CONTENT_TYPE_IMAGE:
                 status, cache_created = self.__get_image_raw(name, use_prefix=force_dir)
                 # check if the cache was created (aka, the image)
