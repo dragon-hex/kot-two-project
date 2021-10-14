@@ -81,16 +81,18 @@ class content:
 
     def get_content(self, name, what_type, **kwargs):
         """
-        this will get the content and store on the cache
-        but you need to provide the type.
+        Get some content for the object, also, this will save on cache
+        for future use.
 
-        font_size: case you using fonts.
+        keywords are:
+        font_size: case you using the font object.
+        force_dir: when using the font.
         """
         font_size   = kwargs.get("font_size") or 12
         force_dir   = kwargs.get("force_dir") or "images/"
-        if      what_type == CONTENT_TYPE_IMAGE:    cache_name  = "i_%s" % name
-        elif    what_type == CONTENT_TYPE_FONT :    cache_name  = "f%d_%s" % (font_size, name)
-        elif    what_type == CONTENT_TYPE_SPRITE:   cache_name  = "s_%s" % name
+        if      what_type == CONTENT_TYPE_IMAGE:    cache_name  = "i:%s" % name
+        elif    what_type == CONTENT_TYPE_FONT :    cache_name  = "f:%d:%s" % (font_size, name)
+        elif    what_type == CONTENT_TYPE_SPRITE:   cache_name  = "s:%s" % name
         else:   return -1
         # -- try to check from the cache --
         if self.cache.get(cache_name):
@@ -110,6 +112,14 @@ class content:
                 if status != 0: return status
                 self.cache[cache_name]=[cache_created,pygame.time.get_ticks()+AVG_TIME_IN_CACHE]
                 return cache_created
+            
+    def recycle_content(self):
+        """ recycle the content. """
+        cache_keys = list(self.cache.keys())
+        for content in cache_keys:
+            if self.cache[content][1] <= pygame.time.get_ticks():
+                self.debug.write("recycling content: %s" % content)
+                del self.cache[content]
     
     def get_image(self, name, force_dir=None):
         """
