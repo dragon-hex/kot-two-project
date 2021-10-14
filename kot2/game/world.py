@@ -47,6 +47,7 @@ class m_world:
         self.on_world = ''
         self.world = None
         self.world_bg = None
+        self.world_element_data = {}
         # variables for statistics
         self.world_ticks_counter = 0
         self.world_draw_counter = 0
@@ -76,6 +77,10 @@ class m_world:
         initial_information = self.game_core.initial_config_dict['initial_settings']
         self.load_map(initial_information.get("load_map"))
         self.load_map("boo_city")
+
+    #
+    # MAP LOADING & MAP GENERATION FUNCTIONS
+    #
 
     def __generate_background(self, world_storage):
         """ this function will generate a background for a certain level, for
@@ -110,17 +115,25 @@ class m_world:
     def load_map(self, map_name):
         """ the map load data is something like this:
             {"name":X,...} properties. """
-        self.debug.write("opening map = %s!" % map_name)
+        # first, load the map file and then extract the data
+        # from there.
+        # TODO: assert if the map file exists.
         target_map_dir  = self.content.game_path + "data/" + map_name + ".json"
+        self.debug.write("Loading map -- %s"% map_name)
+        self.debug.write("Possible Map File: %s" % target_map_dir)
         target_data     = kot2.util.cjson.jsonc_get(target_map_dir)
-        # begin to extract the map information here
-        # and build it using the class.
+        # Here is where all the information is put on the proto_world class
+        # everything from the size to the floor_texture
         proto_world = m_world_storage()
         proto_world.name        = target_data['properties']['name']
         proto_world.size        = target_data['properties']['map_size']
         proto_world.tex_data    = target_data['properties']['floor_tile_texture']
         proto_world.res_size    = target_data['properties']['floor_tile_texture_res']
-        # begin to generate a world
+        # NOTE: the floor texture is not stored on the map but it's stored
+        # on the main class (aka: self), this is done to save memory, many
+        # maps loaded with a distinct background would be bad to store, so
+        # only one map is loaded per world, meaning they need to reload all
+        # the time when it is set.
         self.__generate_background(proto_world)
         self.__load_elements(proto_world)
         # append on the world storage
@@ -128,19 +141,32 @@ class m_world:
         self.world = self.worlds[map_name]
         self.on_world = map_name
     
+    #
+    # MAP CHANGING
+    #
+
     def set_map(self, name):
         """ set the map and not load it again from the file. """
+        # assign the new world reference to the world
+        # stuff.
         self.world = self.worlds[name]
         self.on_world = name
+        # NOTE: update and generate a new background here.
+        self.__generate_background(self.world)
     
     def alternate_map(self):
-        # HACK: choice function don't support dumb
-        # tuples.
+        """ this function will just randomly load a map
+            so, it should be removed on the last version.
+        """
+        # HACK: choice function don't support keys as lists.
         list_words = random.choice(list(self.worlds.keys()))
         self.debug.write("loading random selected world: %s\n" % list_words)
         self.set_map(list_words)
         
-    # -- tick functions
+    #
+    # TICK FUNCTIONS
+    #
+
     def try_move(self, x_dir, y_dir):
         """ try to move the player to some direction """
         self.world.camera_pos[0] += x_dir
@@ -181,7 +207,10 @@ class m_world:
         # TODO: check only for the ticks on the world
         self.tick_time = pygame.time.get_ticks() - time_0
 
-    # -- draw functions
+    #
+    # DRAW FUNCTIONS
+    #
+
     def draw_debug_info(self):
         """ the debug info is drawn after the viewport so the debug info
             is basically on the top of everything """
