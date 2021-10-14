@@ -7,7 +7,7 @@ import random
 import kot2.util
 
 # -- configuration
-FANCY_DEBUG         = False                     # case you debug fonts to be antialised.
+FANCY_DEBUG         = True                      # case you debug fonts to be antialised.
 VERSION             = '1.0'                     # set the version here
 DEBUG_THIS_FILE     = True                      # to debug the most internal functions, see here.
 
@@ -99,6 +99,13 @@ class m_world:
                         y_index * res_size
                     )
                 )
+            
+    def __load_elements(self, world_storage):
+        """ load all the world elements such as trees, rocks, etc. 
+            this elements can have some particular actions such as
+            collisions, events and more, for example, moving a rock
+            or destroying a rock, etc.
+        """
 
     def load_map(self, map_name):
         """ the map load data is something like this:
@@ -115,6 +122,7 @@ class m_world:
         proto_world.res_size    = target_data['properties']['floor_tile_texture_res']
         # begin to generate a world
         self.__generate_background(proto_world)
+        self.__load_elements(proto_world)
         # append on the world storage
         self.worlds[map_name] = proto_world
         self.world = self.worlds[map_name]
@@ -138,6 +146,22 @@ class m_world:
         self.world.camera_pos[0] += x_dir
         self.world.camera_pos[1] += y_dir
 
+    def __process_keys(self):
+        """ process all the keys entries that are continous. """
+        keys_pressed    = pygame.key.get_pressed()
+        if      keys_pressed[pygame.K_UP]   or keys_pressed[pygame.K_w]:
+            self.try_move(0,  self.world.player_speed)
+        elif    keys_pressed[pygame.K_DOWN] or keys_pressed[pygame.K_s]:
+            self.try_move(0, -self.world.player_speed)
+        elif    keys_pressed[pygame.K_LEFT] or keys_pressed[pygame.K_a]:
+            self.try_move( self.world.player_speed, 0)
+        elif    keys_pressed[pygame.K_RIGHT]or keys_pressed[pygame.K_d]:
+            self.try_move(-self.world.player_speed, 0)
+
+    def __subroutine_functions(self):
+        """ subroutine function. """
+        self.content.recycle_content()
+
     def tick(self, ev_list):
         """ do all the game processing here """
         time_0 = pygame.time.get_ticks()
@@ -151,9 +175,9 @@ class m_world:
                 if ev.key == pygame.K_F4:
                     self.alternate_map()
         # check the other clicks (for the player) here
-        keys_pressed    = pygame.key.get_pressed()
-        if keys_pressed[pygame.K_UP] or keys_pressed[pygame.K_w]:
-            self.try_move(0, self.world.player_speed)
+        self.__process_keys()
+        # NOTE: some sub-routine function
+        self.__subroutine_functions()
         # TODO: check only for the ticks on the world
         self.tick_time = pygame.time.get_ticks() - time_0
 
@@ -165,8 +189,8 @@ class m_world:
         texts = [
             "Kot2 '%s'" % VERSION,
             "On Map: %s" % self.on_world,
-            "Tick: %d" % self.tick_time,
-            "Draw: %d" % self.draw_time
+            "Position: [%d, %d]" % (self.world.camera_pos[0],self.world.camera_pos[1]),
+            "Resolution: %d" % self.world.res_size
         ]
         h_space = 0
         for text in texts:
