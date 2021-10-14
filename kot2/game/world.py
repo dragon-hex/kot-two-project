@@ -63,13 +63,26 @@ class m_world:
         self.debug.output_en = DEBUG_THIS_FILE
         self.debug.name_module = "world"
 
+    #
+    # CLASS INIT FUNCTIONS
+    #
+    
+    def load_resources(self):
+        # load the debug text font, this is the font used on the
+        # debug conner you can open by clicking F3.
+        self.debug_info_font = self.content.get_font("normal",14)
+
     def init(self):
         """ initialize the worlds and the principal engine """
-        # init the debug info variables
-        self.debug_info_font = self.content.get_font("normal",14)
-        # init the maps
-        # TODO: load the map from the player saving.
+        # Load all the resources that the WORLD needs here. 
+        self.load_resources()
+        # TODO: this will load the initial map for now, when the
+        # save system be finished, this will no longer be used.
         self.__load_initial_map()
+
+    #
+    # INITIAL MAP INTERACTION & SAVE LOAD
+    #
 
     def __load_initial_map(self):
         """ this function will only activate when the map is not loaded yet """
