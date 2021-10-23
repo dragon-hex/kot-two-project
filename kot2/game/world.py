@@ -5,6 +5,7 @@ import random
 
 # -- import module stuff
 import kot2.util
+import kot2.ui
 
 # -- configuration
 FANCY_DEBUG         = True                      # case you debug fonts to be antialised.
@@ -71,11 +72,23 @@ class m_world:
         # load the debug text font, this is the font used on the
         # debug conner you can open by clicking F3.
         self.debug_info_font = self.content.get_font("normal",14)
+    
+    def load_gui_system(self):
+        # -- init the coregui stuff here --
+        self.coregui    = kot2.ui.elements.display(self.game_core.window.surface)
 
     def init(self):
         """ initialize the worlds and the principal engine """
         # Load all the resources that the WORLD needs here. 
         self.load_resources()
+        # NOTE: here is loaded the main GUI system for the menu
+        # the MENU gui is spliten in this hierachy:
+        # (coregui) ->  (main_menu)  -> (audio_options)
+        #           |                -> (save options)
+        #           |                -> (other options ...)
+        #           \   (text box)
+        #           |   (warning box)
+        self.load_gui_system()
         # TODO: this will load the initial map for now, when the
         # save system be finished, this will no longer be used.
         self.__load_initial_map()
@@ -200,6 +213,10 @@ class m_world:
     def __subroutine_functions(self):
         """ subroutine function. """
         self.content.recycle_content()
+    
+    def __update_guis(self, ev_list):
+        """ update the gui system here """
+        self.coregui.tick(ev_list)
 
     def tick(self, ev_list):
         """ do all the game processing here """
@@ -213,6 +230,11 @@ class m_world:
                     self.show_debug_info = not self.show_debug_info
                 if ev.key == pygame.K_F4:
                     self.alternate_map()
+        # update the coregui system.
+        # NOTE: this needs to be here because there is some
+        # buttons that are triggered by buttons, such as ESC that
+        # opens the menu.
+        self.__update_guis(ev_list)
         # check the other clicks (for the player) here
         self.__process_keys()
         # NOTE: some sub-routine function
@@ -229,10 +251,10 @@ class m_world:
             is basically on the top of everything """
         self.debug_surf.fill((0xFF,0xFF,0xFF))
         texts = [
-            "Kot2 '%s'" % VERSION,
-            "On Map: %s" % self.on_world,
-            "Position: [%d, %d]" % (self.world.camera_pos[0],self.world.camera_pos[1]),
-            "Resolution: %d" % self.world.res_size
+            "Kot2 '%s'"                     % VERSION,
+            "On Map: %s"                    % self.on_world,
+            "Position: [%d, %d]"            % (self.world.camera_pos[0],self.world.camera_pos[1]),
+            "Resolution: %d"                % self.world.res_size
         ]
         h_space = 0
         for text in texts:
@@ -244,6 +266,10 @@ class m_world:
     
     def world_draw(self):
         self.game_core.window.surface.blit(self.world_bg,self.world.camera_pos)
+    
+    def draw_gui(self):
+        """ update the main gui functions """
+        self.coregui.draw()
 
     def draw(self):
         """ draw the game frame """
@@ -253,4 +279,5 @@ class m_world:
         # draw the debug text if possible
         if self.show_debug_info:
             self.draw_debug_info()
+        self.draw_gui()
         pygame.display.flip()
