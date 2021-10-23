@@ -65,24 +65,56 @@ class __content_pool:
 class style:
     def __init__(self):
         """ some cool styles. """
-        self.visible    = False
+        self.visible    = True
 
 # -- display class begin here --
 class cursor:
     def __init__(self):
-        self.cursor_textures = []
-        self.cursor_state = 0
+        # CURSOR RECT & COLLISION
+        self.cursor_rect = None
+
+        # CURSOR APPEARS?
+        self.cursor_visible = True
+
+        # CURSOR TEXTURING
+        self.cursor_textures        = []
+        self.cursor_state           = 0
         self.cursor_animation_index = 0
-        self.cursor_animation_time = 0
+        self.cursor_animation_time  = 0
+
+        # PROPORTIONS
+        self.cursor_size = [32, 32]
+
+        # MAKE DUMMY SQUARE
+        self.__make_dummy_square()
     
+    def __make_dummy_square(self):
+        """ this prevents the game from crashing when there is no sprite. """
+        dummy_texture = pygame.Surface((32,32))
+        self.cursor_textures = [
+            [dummy_texture.copy()],
+            [dummy_texture.copy()]
+        ]
+        self.cursor_rect = pygame.Rect((32, 32),(0, 0))
+       
+    def __load_position(self):
+        """ load the position here """
+        self.cursor_rect.x, self.cursor_rect.y = pygame.mouse.get_pos()
+        self.cursor_rect.x -= self.cursor_size[0] // 2
+        self.cursor_rect.y -= self.cursor_size[1] // 2
+        # NOTE: this is just to prevent the cursor from blocking the
+        # normal gameplay, in a nutshell, this function will stop the
+        # cursor from appearing when playing.
+
     def tick(self): 
         """ tick the cursor for update it animation and time. """
         if self.cursor_animation_time < pygame.time.get_ticks():
-            if len(self.cursor_textures[self.cursor_state]) < self.cursor_animation_index + 1:
-                self.cursor_animation_index     = 0
+            if len(self.cursor_textures[self.cursor_state]) <= self.cursor_animation_index + 1:
+                self.cursor_animation_index = 0
             else:
-                self.cursor_animation_index     += 1
+                self.cursor_animation_index += 1
             self.cursor_animation_time = pygame.time.get_ticks() + (0.5 * 1000)
+        self.__load_position()
 
 class display(__content_pool):
     def __init__(self, at_surface):
@@ -99,6 +131,14 @@ class display(__content_pool):
         if self.style.visible:
             self.cursor.tick()
             self.tick_element(ev_list)
+    
+    def __draw_cursor(self):
+        """ draw the cursor on the screen """
+        if self.cursor.cursor_visible:
+            self.at_surface.blit(
+                self.cursor.cursor_textures[self.cursor.cursor_state][self.cursor.cursor_animation_index],
+                self.cursor.cursor_rect
+            )
     
     def draw(self):
         """ draw the elements on the screen """
