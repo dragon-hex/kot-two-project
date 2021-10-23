@@ -5,6 +5,9 @@
 CURSOR_NORMAL_STATE     = 0
 CURSOR_WAITING_STATE    = 1
 
+# After 10 times inside the loop, hide it.
+CURSOR_HIDE_TIME        = 10
+
 #
 # Element Styles
 #
