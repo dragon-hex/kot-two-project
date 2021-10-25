@@ -15,5 +15,17 @@
         "floor_tile_texture"    : {"type":"sprite","name":"axc_grass0","res":64}
     },
     "elements": [
+        {
+            // this will generate a tree on the world!
+            "name":"generic.tree",
+            "position": [0, 0],
+            "texture": {"type":"sprite","name":"axc_tree0","res":32,"index":0}
+        },
+        {
+            // this will generate a tree on the world!
+            "name":"another.generic.tree",
+            "position": [1, 0],
+            "texture": {"type":"sprite","name":"axc_tree0","res":32,"index":0}
+        }
     ]
 }
