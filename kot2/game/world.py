@@ -44,20 +44,20 @@ class m_world:
         # and it not removed until the max world on the
         # list is not reach.
         # TODO: GC collection on the worlds.
-        self.worlds = {}
-        self.on_world = ''
-        self.world = None
-        self.world_bg = None
-        self.world_element_data = {}
+        self.worlds             = {}
+        self.on_world           = ''
+        self.world              = None
+        self.world_bg           = None
+        self.world_element_cache= {}
         # variables for statistics
-        self.world_ticks_counter = 0
-        self.world_draw_counter = 0
+        self.world_ticks_counter    = 0
+        self.world_draw_counter     = 0
         # calculate the tick time.
         self.tick_time = 0
         self.draw_time = 0
         # init the debug info surface
-        self.show_debug_info = False
-        self.debug_surf = pygame.Surface((128*2,128))
+        self.show_debug_info    = False
+        self.debug_surf         = pygame.Surface((128*2,128))
         # real deep down debug
         self.debug = kot2.util.debug.debug_instance()
         self.debug.output_to = sys.stdout if DEBUG_THIS_FILE else None
@@ -131,12 +131,32 @@ class m_world:
                     )
                 )
             
-    def __load_elements(self, world_storage):
-        """ load all the world elements such as trees, rocks, etc. 
-            this elements can have some particular actions such as
-            collisions, events and more, for example, moving a rock
-            or destroying a rock, etc.
+    def __load_elements(self, world_storage, data):
         """
+        Load all the world elements.
+        ----------------------------
+        NOTE: you must have the world already loaded,
+        this requires self.world to be a valid pointer
+        to the world.
+        """
+        self.debug.write("loading elements for map: %s" % world_storage.name)
+        if not data.get("elements"):
+            self.debug.write("map %s don't have a element list." % world_storage.name)
+            return
+        # NOTE: the world elements textures are stored in the special cache in
+        # this class (self.world_element_cache)*, if a world is not used for a
+        # long time, it will be recycled to free more memory.
+        self.debug.write("there are: %d elements to be loaded." % len(data['elements']))
+        for element in data['elements']:
+            element_name    = element.get("name")
+            element_position= element.get("position")
+            element_texture = element.get("texture")
+            element_size    = element_texture.get("res")
+            element_rect    = pygame.Rect()
+            # NOTE: this is a quick information of how elements are organized.
+
+            world_storage.elements.append([
+            ])
 
     def load_map(self, map_name):
         """ the map load data is something like this:
@@ -161,7 +181,7 @@ class m_world:
         # only one map is loaded per world, meaning they need to reload all
         # the time when it is set.
         self.__generate_background(proto_world)
-        self.__load_elements(proto_world)
+        self.__load_elements(proto_world, target_data)
         # append on the world storage
         self.worlds[map_name] = proto_world
         self.world = self.worlds[map_name]
