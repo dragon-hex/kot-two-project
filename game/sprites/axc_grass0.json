@@ -1,0 +1,7 @@
+{
+    // this is more like a offset of where is the position.
+    "tree00":{"size":[64, 64], "cutX":0,    "cutY":0},
+    "tree01":{"size":[64, 64], "cutX":64,   "cutY":0},
+    "tree02":{"size":[64, 64], "cutX":0,    "cutY":64},
+    "tree03":{"size":[64, 64], "cutX":64,   "cutY":64}
+}
