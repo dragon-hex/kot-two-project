@@ -15,6 +15,13 @@ KOT_ELEMENT_TEXTURE_INDEX   = 5
 KOT_ELEMENT_TEXTURE_TINDEX  = 6
 KOT_ELEMENT_RECT            = 7
 
+KOT_PLAYER_LOOK_UP          = 0
+KOT_PLAYER_LOOK_DOWN        = 1
+KOT_PLAYER_LOOK_LEFT        = 2
+KOT_PLAYER_LOOK_RIGHT       = 3
+
+# -- project modifiers --
+
 # -- the main world stuff --
 class kotWorldStorage: 
     def __init__(self):
@@ -36,6 +43,7 @@ class kotWorldStorage:
         # player position & camera.
         self.camera     = [0, 0]
         self.pSpeed     = 4
+        self.usingMove  = None
 
 class kotWorld:
     def __init__(self, kotSharedCore, kotSharedStorage, viewport):
@@ -49,8 +57,45 @@ class kotWorld:
         self.worlds         = {}
         self.onWorld        = None
         self.worldBackground= None
+        # -- the player storage --
+        self.playerSize     = None
+        self.playerRect     = None
+        self.playerTextures = []
+        self.playerLookAt   = 1     # NOTE: player is always looking at down (for better view!)
+        self.playerTexIndex = 0
+        self.playerTexIndexT= 0
+        self.__initTemporaryPlayerTexture()
         # NOTE: there need a world to be showed case any are loaded.
         self.__initTemporaryWorld()
+
+    #
+    # -- player stuff --
+    #
+    def __initTemporaryPlayerTexture(self):
+        """__initTemporaryPlayerTexture: the game needs a player texture
+        at least one for the player, if there is none, the game would crash, so
+        this assert the player will have a texture, even though it is just a
+        black square."""
+        # setup the size, player default size is always 32x32
+        # also, the player don't moves but instead, the world,
+        # so, the player is always on the center of screen.
+        self.playerSize = [32, 32]
+        playerPosition  =   [self.viewport.get_width()//2-self.playerSize[0]//2,
+                            self.viewport.get_height()//2-self.playerSize[1]//2]
+        self.playerRect = pygame.Rect(playerPosition,self.playerSize)
+        # the player textures as said before, is just some black
+        # squares, later on, it's supposed to be loaded by the world.
+        justBlackSquare = pygame.Surface(self.playerSize) ; justBlackSquare.fill((0x00, 0x00, 0x00))
+        self.playerTextures = [
+            [justBlackSquare.copy()],   # up    direction
+            [justBlackSquare.copy()],   # down  direction
+            [justBlackSquare.copy()],   # left  direction
+            [justBlackSquare.copy()],   # right direction
+        ]
+        # finish off by setting the position of the player
+        # that meaning the direction it is looking.
+        self.playerTexIndex = 0
+        self.playerTexIndexT = 0
     
     #
     # -- world init --
@@ -114,6 +159,8 @@ class kotWorld:
         self.worlds[protoWorld.genericName] = protoWorld
         self.world = self.worlds[protoWorld.genericName]
         self.onWorld = protoWorld.genericName
+        # low-level configurations
+        self.usingMove = self.move
     
     def __generateDecorationTrees(self, world):
         """__generateDecorationTrees: this is a internal engine function
@@ -121,16 +168,21 @@ class kotWorld:
         listTexturesForTrees    = self.kotSharedStorage.getContentBySpecification(world.tTexture)
         randomGenerator         = random.Random()
         randomGenerator.seed(world.tSeed) 
+        # NOTE: the range for tree generation is always 1 to 10.
         # setup the texture index.
+        numberForTheTree = randomGenerator.randint(1,10)
         for yIndex in range(0, world.bSize[1]):
             for xIndex in range(0, world.bSize[0]):
-                self.newElement(world, 
-                    eName="generic.tree00-%d-%d"%(xIndex,yIndex),
-                    ePosition=[xIndex,yIndex],
-                    eSize=[64, 64],
-                    eTexture=random.choice(listTexturesForTrees),
-                    eTextureType=0
-                )
+                # randomly generate trees.
+                generateTree = randomGenerator.randint(1,10)
+                if generateTree == numberForTheTree:
+                    self.newElement(world, 
+                        eName="generic.tree00-%d-%d"%(xIndex,yIndex),
+                        ePosition=[xIndex,yIndex],
+                        eSize=[64, 64],
+                        eTexture=random.choice(listTexturesForTrees),
+                        eTextureType=0
+                    )
     
     def __loadWorldBackground(self, world):
         """__loadWorldBackground: load the world background.""" 
@@ -206,24 +258,77 @@ class kotWorld:
         for element in self.world.elements:
             element[KOT_ELEMENT_RECT].x += xDir
             element[KOT_ELEMENT_RECT].y += yDir
+    
+    def moveTest(self, whatX, whatY):
+        """moveTest: basically check what happens if move in some direction."""
+        temporaryRectangle = pygame.Rect((self.playerRect.x - whatX, self.playerRect.y - whatY), self.playerSize)
+        for element in self.world.elements:
+            if element[KOT_ELEMENT_RECT].colliderect(temporaryRectangle):
+                return True
+        return False
 
     def move(self, xDir, yDir):
         """move: move the camera + the player."""
+        # test for possible collisions.
+        if self.moveTest(xDir, yDir):
+            return
+        # move the world and the elements.
         self.world.camera[0] += xDir
         self.world.camera[1] += yDir
         self.moveElements(xDir, yDir)
+    
+    def movePrecise(self, xDir, yDir):
+        """movePrecise: this is a more expansive move function, this will
+        try to move precisely to the max possible direction."""
+        maxHitX = 0     ; isXNeg = xDir < 0
+        maxHitY = 0     ; isYNeg = yDir < 0
+        for hitX in range(0, -(xDir) if isXNeg else xDir):
+            if self.moveTest(-hitX if isXNeg else hitX, 0):
+                break
+            else:
+                maxHitX = -hitX if isXNeg else hitX
+        for hitY in range(0, -(yDir) if yDir < 0 else yDir): 
+            if self.moveTest(0, -hitY if isYNeg else hitY):
+                break
+            else:
+                maxHitY = -hitY if isYNeg else hitY
+        # after all this stuff, move the world, case is possible.
+        self.world.camera[0] += maxHitX
+        self.world.camera[1] += maxHitY
+        self.moveElements(maxHitX,maxHitY)
+    
+    def changePlayerLookAt(self, whatDirection):
+        """changePlayerLookAt: changes and process the animation."""
+        if whatDirection == self.playerLookAt:
+            # if the same direction is set, then don't change, just
+            # move to the next index on the animation list (if possible).
+            if self.playerTexIndexT <= pygame.time.get_ticks():
+                self.playerTexIndex  = (0 if self.playerTexIndex + 1 >= len(self.playerTextures[self.playerLookAt]) else self.playerTexIndex + 1)
+                self.playerTexIndexT = pygame.time.get_ticks() + (2 * 1000) 
+        else:
+            # change the player direction.
+            self.playerLookAt = whatDirection
+            self.playerTexIndex = 0
+            self.playerTexIndexT = 0
 
     def tick(self, eventList):
-        # get the continuous events.
+        # NOTE: the move precision is set by the world at the beginning!
+        # if you using some action platformer that require a high precision
+        # level on the element collisions, please, read the DOC about this
+        # mode.
         keyPressed = pygame.key.get_pressed()
         if      keyPressed[KEYS_UP[0]]      or keyPressed[KEYS_UP[1]]:
-            self.move(0,     self.world.pSpeed)
+            self.changePlayerLookAt(KOT_PLAYER_LOOK_UP)
+            self.usingMove(0,     self.world.pSpeed)
         elif    keyPressed[KEYS_DOWN[0]]    or keyPressed[KEYS_DOWN[1]]:
-            self.move(0,    -self.world.pSpeed)
+            self.changePlayerLookAt(KOT_PLAYER_LOOK_DOWN)
+            self.usingMove(0,    -self.world.pSpeed)
         elif    keyPressed[KEYS_LEFT[0]]    or keyPressed[KEYS_LEFT[1]]:
-            self.move(self.world.pSpeed,     0)
+            self.changePlayerLookAt(KOT_PLAYER_LOOK_LEFT)
+            self.usingMove(self.world.pSpeed,     0)
         elif    keyPressed[KEYS_RIGHT[0]]   or keyPressed[KEYS_RIGHT[1]]:
-            self.move(-self.world.pSpeed,    0)
+            self.changePlayerLookAt(KOT_PLAYER_LOOK_RIGHT)
+            self.usingMove(-self.world.pSpeed,    0)
 
     # 
     # -- draw the world --
@@ -243,9 +348,18 @@ class kotWorld:
                 element[KOT_ELEMENT_TEXTURE],
                 element[KOT_ELEMENT_RECT]
             )
+    
+    def drawPlayer(self):
+        """drawPlayer: as the function sugests, it draws the player on
+        the viewport."""
+        self.viewport.blit(
+            self.playerTextures[self.playerLookAt][self.playerTexIndex],
+            self.playerRect
+        )
 
     def draw(self):
         """draw: this will draw all the element."""
         self.cleanViewport()
         self.drawBackground()
         self.drawElements()
+        self.drawPlayer()
