@@ -1,0 +1,4 @@
+#!/bin/bash
+# TODO: this is the future executable file for the game.
+# this will execute the laucher for the game with all the
+# necessary flags.
