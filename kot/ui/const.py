@@ -1,0 +1,1 @@
+KOT_ELEMENT_GRAPH   = 'graph'
