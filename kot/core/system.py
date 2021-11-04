@@ -33,6 +33,9 @@ class kotSharedCore:
         self.running = True
         self.mode = []
         self.on_mode = 0
+        # for the statistics & debug gui's
+        self.tickTime = 0
+        self.drawTime = 0
     def getRunning(self):
         """getRunning: get the state of the game."""
         return self.running
