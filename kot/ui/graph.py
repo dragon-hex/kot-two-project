@@ -1,5 +1,5 @@
 import pygame
-import random
+import math
 
 class graph:
     def __init__(self, atDisplay, size=[80, 40]):
@@ -31,11 +31,12 @@ class graph:
     
     def __renderLine(self):
         """__renderLine: the most essential part of the graph."""
-        height = random.randint(1,self.size[1])
         # setup the height by the value
-        graphSubDivision = self.size[1] / self.averageMax
-        height = (graphSubDivision * self.valueNow)
-        print(graphSubDivision, height, self.valueNow)
+        graphSubDivision    = self.size[1] / self.averageMax
+        height              = math.floor(graphSubDivision * self.valueNow)
+        if height >= self.size[1]:
+            # NOTE: prevent from overdrawing.
+            height = self.size[1]
         # draw the line here.
         pygame.draw.line(self.graphBuffer,self.fgColor,(self.lineX,self.size[1]),(self.lineX,self.size[1]-height))
         if self.lineX + 1 > self.size[0]:
@@ -49,6 +50,12 @@ class graph:
         # render the background.
         self.__renderBackground()
         self.__renderLine()
+    
+    # -- set functions --
+    def setSize(self, xSize, ySize):
+        """setSize: automatically re-render."""
+        self.size = [xSize, ySize]
+        self.render()
     
     # -- setup the core --
     def set(self, what):
