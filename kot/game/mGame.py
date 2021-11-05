@@ -55,6 +55,14 @@ class kotGame:
     def __atQuit(self):
         """__atQuit: basically quits the game."""
         self.kotSharedCore.running = False
+    
+    def __reliefSubRoutine(self):
+        """__reliefSubRoutine: some stuff to clean the memory."""
+        self.kotSharedStorage.cleanOldCache()
+
+    def performSubroutines(self):
+        """performSubroutines: perform some important subroutines."""
+        self.__reliefSubRoutine()       # keep the cache memory low as possible.
 
     def tick(self, eventList):
         """tick: tick the game events."""
@@ -67,6 +75,7 @@ class kotGame:
         self.coreUI.tick(eventList)
         self.__updateDebugGui()
         self.kotWorlds.tick(eventList)
+        # NOTE: perform the subroutines of the game.
 
     #
     # -- draw region --
