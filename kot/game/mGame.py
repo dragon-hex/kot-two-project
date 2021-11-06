@@ -13,6 +13,15 @@ class kotGame:
         self.kotViewport = None
         self.kotViewportPosition = [0, 0]
         self.kotWorlds = None
+        # -- control some internal events --
+
+    #
+    # -- events from the game --
+    #
+    def __atWorldUpdate(self):
+        """__atWorldUpdate: this will show the title card."""
+        pass
+
     #
     # -- init region --
     #
@@ -24,6 +33,8 @@ class kotGame:
     def initWorlds(self):
         """initWorlds: init the worlds."""
         self.kotWorlds = kotWorld(self.kotSharedCore, self.kotSharedStorage, self.kotViewport)
+        self.kotWorlds.atWorldUpdate = lambda: self.__atWorldUpdate()
+        self.kotWorlds.init()
 
     # -- mini region: coregui & debugui --
     # NOTE: the debug region has a two small graphs, one for calculate the tick
@@ -49,7 +60,6 @@ class kotGame:
     #
     def __updateDebugGui(self):
         """__updateDebugGui: setup the GUI for the debug.""" 
-        print(self.kotSharedCore.tickTime)
         self.debugUITickGraph.set(self.kotSharedCore.tickTime*1000)
 
     def __atQuit(self):
@@ -69,13 +79,11 @@ class kotGame:
         for event in eventList:
             if event.type == pygame.QUIT:
                 self.__atQuit()
-        # tick the GUI & world.
-        # NOTE: the GUI sometimes has more priority due it
-        # possibility to change the game during it.
-        self.coreUI.tick(eventList)
-        self.__updateDebugGui()
-        self.kotWorlds.tick(eventList)
-        # NOTE: perform the subroutines of the game.
+        # ticks
+        self.coreUI.tick(eventList)             # tick the core GUI
+        self.__updateDebugGui()                 # tick the DEBUG GUI
+        self.performSubroutines()               # perform subroutines.
+        self.kotWorlds.tick(eventList)          # and finally tick the world
 
     #
     # -- draw region --
@@ -83,6 +91,10 @@ class kotGame:
     def updateViewport(self):
         """updateViewport: basically update the viewport.""" 
         self.kotSharedCore.window.surface.blit(self.kotViewport,self.kotViewportPosition)
+    
+    def drawWorldCard(self):
+        """showWorldCard: shows the world icon + name."""
+        pass
 
     def draw(self):
         """draw: draw everything that is need on the screen."""

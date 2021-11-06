@@ -1,5 +1,10 @@
+# pygame & random
 import pygame
 import random
+
+# kot.utils
+from kot.utils import jsonLoad
+
 # -- keymap --
 KEYS_UP         = [pygame.K_UP,     pygame.K_w]
 KEYS_DOWN       = [pygame.K_DOWN,   pygame.K_s]
@@ -28,6 +33,8 @@ class kotWorldStorage:
         # NOTE: this stores the world elements.
         self.name       = "Ajax's Bat Helm"
         self.genericName= "noname"
+        # world sections
+        self.worldData  = {}
         # background is stored here.
         self.bSeed      = 1
         self.bSize      = [0, 0]
@@ -57,6 +64,9 @@ class kotWorld:
         self.worlds         = {}
         self.onWorld        = None
         self.worldBackground= None
+        # -- setup the world icon --
+        self.worldIcon      = None
+        self.worldCard      = None
         # -- the player storage --
         self.playerSize     = None
         self.playerRect     = None
@@ -64,8 +74,15 @@ class kotWorld:
         self.playerLookAt   = 1     # NOTE: player is always looking at down (for better view!)
         self.playerTexIndex = 0
         self.playerTexIndexT= 0
+        # -- setup event --
+        self.atWorldUpdate = None
+    
+    #
+    # -- init stuff phase --
+    #
+    def init(self):
+        """init: init the engine components."""
         self.__initTemporaryPlayerTexture()
-        # NOTE: there need a world to be showed case any are loaded.
         self.__initTemporaryWorld()
 
     #
@@ -100,31 +117,20 @@ class kotWorld:
     #
     # -- world init --
     #
+    def getWorldPath(self, levelName, prefix="level"):
+        """getWorldPath: return the world path."""
+        return self.kotSharedStorage.gamePath+"data/%s.json"%(prefix+levelName)
+
+    def __loadTemporaryWorld(self):
+        """return the level0 world."""
+        print(self.getWorldPath("0"))
+        return jsonLoad(self.getWorldPath("0"))
+        
     def __initTemporaryWorld(self):
         """__initTemporaryWorld: the temporary world is a simple world
         which is a simple block."""
-        self.loadWorld({
-            'data': {
-                'name'              : "Ajax's Bat Helm",
-                'genericName'       : "noname",
-            },
-            'world': {
-                # the 'b' stands for background.
-                'bSeed'             : 1,
-                'bSize'             : [10, 10],
-                'bTexture'          : {'name':"axc_grass0", "type":"sprite", "size":64},
-                'bTileSize'         : 64,
-                # NOTE: the trees keyword is just a decoration.
-                # this is not supposed to be enabled each time.
-                'trees'             : True,
-                'tTexture'          : {'name':"axc_tree0", "type":"sprite", "size":64},
-                'tSeed'             : 0
-            },
-            'elements': { 
+        self.loadWorld(self.__loadTemporaryWorld())
 
-            }
-        })
-    
     def loadWorld(self, data):
         """loadWorld: basically load the world and store it on the
         world storage list."""
@@ -132,6 +138,8 @@ class kotWorld:
         protoWorld      = kotWorldStorage()
         worldData       = data['data']
         worldBackground = data['world']
+        # store the sections
+        protoWorld.worldData = worldData
         # set all the things on the prototype.
         protoWorld.name         = worldData['name']
         protoWorld.genericName  = worldData['genericName']
@@ -161,6 +169,11 @@ class kotWorld:
         self.onWorld = protoWorld.genericName
         # low-level configurations
         self.usingMove = self.move
+        # NOTE: this is a function to the high level
+        # or the world controller, this will make a event
+        # on the main game to show the worldCard.
+        if callable(self.atWorldUpdate):
+            self.atWorldUpdate()
     
     def __generateDecorationTrees(self, world):
         """__generateDecorationTrees: this is a internal engine function
