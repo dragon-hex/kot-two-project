@@ -1,6 +1,7 @@
 {
     // store the data here, things like the world name
-    // and description, if you want to.
+    // and description, if you want to. This is a simple
+    // demo of a world (JOKE LEVEL).
     "data": {
         "name"          : "Liru's World",
         "genericName"   : "level0.lirusekaa",
