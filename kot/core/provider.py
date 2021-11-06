@@ -140,9 +140,9 @@ class kotSharedStorage:
         """getContentBySpecification: basically gets the content by it specification
         that is used on the JSON files, for example: to get a image with the name of
         'pedro', you would have this configuration: {'name':'pedro','type':'image'}."""
-        targetName = whatData['name']   # name of the object
-        targetType = whatData['type']   # what the type of the object
-        targetSize = whatData['size']   # TODO: this will cut and adjust the size for images.
+        targetName = whatData['name']       # name of the object
+        targetType = whatData['type']       # what the type of the object
+        targetSize = whatData.get('size')   # TODO: this will cut and adjust the size for images.
         # assert if the values are correct, this prevent the other functions from crashing
         # and doing some problems on the future.
         # ---
