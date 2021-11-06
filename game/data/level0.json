@@ -1,0 +1,29 @@
+{
+    // store the data here, things like the world name
+    // and description, if you want to.
+    "data": {
+        "name"          : "Liru's World",
+        "genericName"   : "level0.lirusekaa",
+        "icon"          : {"name":"kotSecretLevelImage","type":"image","size":64},
+        "iconSize"      : 64
+    },
+    // the world settings: stores all the world configuration
+    // that is needed for the world generation, such as size,
+    // tile size, texture and etc.
+    "world": {
+        // define the world here.
+        "bSeed"     : 1,
+        "bSize"     : [20, 20],
+        "bTexture"  : {"name":"axc_grass0", "type":"sprite", "size":64},
+        "bTileSize" : 64,
+        // since this is a test level, generate some trees with
+        // the hidden function "tree", this is just some static
+        // trees arround the map.
+        "trees"     : true,
+        "tTexture"  : {"name":"axc_tree0", "type":"sprite", "size":64},
+        "tSeed"     : 0
+    },
+    "elements":  {
+
+    }
+}
