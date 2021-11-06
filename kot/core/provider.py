@@ -37,6 +37,7 @@ class kotSharedStorage:
             thisCacheTime = self.cacheStorage[cacheKey][1] 
             if pygame.time.get_ticks() >= thisCacheTime and thisCacheTime != -1:
                 del self.cacheStorage[cacheKey]
+                return
 
     def isCache(self, cacheKey):
         """isCache: return if the key is avaiable in cache."""
