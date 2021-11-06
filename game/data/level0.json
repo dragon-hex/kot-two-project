@@ -15,16 +15,33 @@
         // define the world here.
         "bSeed"     : 1,
         "bSize"     : [20, 20],
-        "bTexture"  : {"name":"axc_grass0", "type":"sprite", "size":64},
+        "bTexture"  : {"name":"axc_grass0", "type":"sprite"},
         "bTileSize" : 64,
         // since this is a test level, generate some trees with
         // the hidden function "tree", this is just some static
         // trees arround the map.
         "trees"     : true,
-        "tTexture"  : {"name":"axc_tree0", "type":"sprite", "size":64},
+        "tTexture"  : {"name":"axc_tree0", "type":"sprite"},
         "tSeed"     : 0
     },
-    "elements":  {
-
-    }
+    "elements":  [
+        // some examples of elements here.
+        // the elements are formed by a name, a genericName (used on the id)
+        // a texture that follows the same style as the other textures,
+        // the size of such object.
+        {
+            "name":             "testSprite",
+            "genericName":      "testSprite0",
+            "texture":          {"name":"axc_grass0","type":"sprite"},
+            "size":             [64, 64],
+            "position":         [2, 2]
+        },
+        {
+            "name":             "anotherTestSprite",
+            "genericName":      "testSprite1",
+            "texture":          {"name":"axc_grass0","type":"sprite"},
+            "size":             [64, 64],
+            "position":         [4, 2]
+        }
+    ]
 }
