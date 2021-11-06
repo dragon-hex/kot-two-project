@@ -35,6 +35,7 @@ class kotWorldStorage:
         self.genericName= "noname"
         # world sections
         self.worldData  = {}
+        self.worldElements = {}
         # background is stored here.
         self.bSeed      = 1
         self.bSize      = [0, 0]
@@ -138,22 +139,27 @@ class kotWorld:
         protoWorld      = kotWorldStorage()
         worldData       = data['data']
         worldBackground = data['world']
+        
         # store the sections
         protoWorld.worldData = worldData
+        
         # set all the things on the prototype.
         protoWorld.name         = worldData['name']
         protoWorld.genericName  = worldData['genericName']
+        
         # set all the world information.
         protoWorld.bSize = worldBackground['bSize']
         protoWorld.bSeed = worldBackground['bSeed']
         protoWorld.bTexture = worldBackground['bTexture']
         protoWorld.bTileSize = worldBackground['bTileSize']
+        
         # here begin to load the world background
         # the background is generated when the game needs
         # it, so, every time the world changes, the background
         # needs to be regenerated, this is done for
         # save the memory and keep the game memory usage consistent.
         self.__loadWorldBackground(protoWorld)
+        
         # begin to load the world elements, such as tree and
         # other stuff. NOTE: the trees aren't supposed to be
         # load the by the game.
@@ -163,10 +169,16 @@ class kotWorld:
         protoWorld.elements     = []
         if worldBackground['trees']:
             self.__generateDecorationTrees(protoWorld)
+        
+        # generate the world elements
+        protoWorld.worldElements = data['elements']
+        self.loadWorldElements(protoWorld)
+
         # save the world.
         self.worlds[protoWorld.genericName] = protoWorld
         self.world = self.worlds[protoWorld.genericName]
         self.onWorld = protoWorld.genericName
+        
         # low-level configurations
         self.usingMove = self.move
         # NOTE: this is a function to the high level
@@ -174,6 +186,31 @@ class kotWorld:
         # on the main game to show the worldCard.
         if callable(self.atWorldUpdate):
             self.atWorldUpdate()
+    
+    def loadWorldElements(self, world):
+        """loadWorldElements: load the world elements, but this will erase
+        everything, if you want to load only the texture, see the 
+        worldElementTextureRegenerate() function."""
+        for element in world.worldElements:
+            # NOTE: setup the element name & properties
+            # also, the position.
+            eName           = element.get("name")
+            eGenericName    = element.get("genericName")
+            eSize           = element.get("size")
+            ePosition       = element.get("position")
+            eTexture        = element.get("texture")
+            eTextureGot     = self.kotSharedStorage.getContentBySpecification(eTexture)
+            print(eTextureGot)
+            eTextureType    = (1 if eTexture['type'] == 'sprite' else 0)
+            # generate a new element.
+            self.newElement(
+                world,
+                eName=eName,
+                eSize=eSize,
+                eTexture=eTextureGot,
+                eTextureType=eTextureType,
+                ePosition=ePosition
+            )
     
     def __generateDecorationTrees(self, world):
         """__generateDecorationTrees: this is a internal engine function
@@ -206,7 +243,7 @@ class kotWorld:
         # setup the textures here.
         listTexturesUse = self.kotSharedStorage.getContentBySpecification(world.bTexture)
         worldSize       = world.bSize
-        worldTileSize   = world.bTexture['size']
+        worldTileSize   = world.bTileSize
         # generate the surface
         # NOTE: the world supports a possible transparency.
         self.worldBackground    =   pygame.Surface((worldSize[0] * worldTileSize, 
@@ -323,6 +360,19 @@ class kotWorld:
             self.playerLookAt = whatDirection
             self.playerTexIndex = 0
             self.playerTexIndexT = 0
+    
+    def updateWorldElements(self):
+        """updateWorldElements: update all the world elements that can
+        have a sprite, if it is a image, leave it."""
+        for element in self.world.elements:
+            if element[KOT_ELEMENT_TEXTURE_TYPE] == 1:
+                if element[KOT_ELEMENT_TEXTURE_TINDEX] < pygame.time.get_ticks():
+                    spriteListSize = len(element[KOT_ELEMENT_TEXTURE])
+                    spriteIndex    = element[KOT_ELEMENT_TEXTURE_INDEX]
+                    element[KOT_ELEMENT_TEXTURE_INDEX] = (0 if spriteIndex + 1 >= spriteListSize else (spriteIndex + 1))
+                    # TODO: MAKE THE SPRITE HAVE A CUSTOM TIME!
+                    element[KOT_ELEMENT_TEXTURE_TINDEX] = pygame.time.get_ticks() + (1 * 1000)
+
 
     def tick(self, eventList):
         # NOTE: the move precision is set by the world at the beginning!
@@ -342,6 +392,9 @@ class kotWorld:
         elif    keyPressed[KEYS_RIGHT[0]]   or keyPressed[KEYS_RIGHT[1]]:
             self.changePlayerLookAt(KOT_PLAYER_LOOK_RIGHT)
             self.usingMove(-self.world.pSpeed,    0)
+        
+        # update the elements (sprites)
+        self.updateWorldElements()
 
     # 
     # -- draw the world --
@@ -357,10 +410,16 @@ class kotWorld:
     def drawElements(self):
         """drawElements: draw the world elements."""
         for element in self.world.elements:
-            self.viewport.blit(
-                element[KOT_ELEMENT_TEXTURE],
-                element[KOT_ELEMENT_RECT]
-            )
+            if element[KOT_ELEMENT_TEXTURE_TYPE] == 0:
+                self.viewport.blit(
+                    element[KOT_ELEMENT_TEXTURE],
+                    element[KOT_ELEMENT_RECT]
+                )
+            elif element[KOT_ELEMENT_TEXTURE_TYPE] == 1:
+                self.viewport.blit(
+                    element[KOT_ELEMENT_TEXTURE][element[KOT_ELEMENT_TEXTURE_INDEX]],
+                    element[KOT_ELEMENT_RECT]
+                )
     
     def drawPlayer(self):
         """drawPlayer: as the function sugests, it draws the player on
