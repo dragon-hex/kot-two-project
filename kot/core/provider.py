@@ -136,7 +136,7 @@ class kotSharedStorage:
     # -- user data request --
     # 
 
-    def getContentBySpecification(self, whatData):
+    def getContentBySpecification(self, whatData, ordered=False):
         """getContentBySpecification: basically gets the content by it specification
         that is used on the JSON files, for example: to get a image with the name of
         'pedro', you would have this configuration: {'name':'pedro','type':'image'}."""
@@ -158,6 +158,10 @@ class kotSharedStorage:
             # size.
             return self.getImage(targetName)
         elif    targetType == KOT_CONTENT_TYPE_SPRITE:
+            # NOTE: This is used more for the trees, it return
+            # the array as ordered.
+            if ordered:
+                return self.getSprites(targetName,ordered=True)
             # TODO: finish the sprite logic for LOCKED sprites
             # and animated sprites from BEGIN to END ranges.
             targetSpriteOnly = whatData.get('only')
