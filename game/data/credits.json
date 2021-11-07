@@ -1,0 +1,9 @@
+{
+    "data": [
+        {"type":"center-text",          "text":["Kot Engine Team"]},
+        {"type":"space"},
+        {"type":"left-right-text",      "text":["Scripted:","Pyxel"]},
+        {"type":"left-text",            "text":["rafasexi"]},
+        {"type":"left-text",            "text":["moonwings"]}
+    ]
+}
