@@ -19,6 +19,7 @@ KOT_ELEMENT_TEXTURE_TYPE    = 4
 KOT_ELEMENT_TEXTURE_INDEX   = 5
 KOT_ELEMENT_TEXTURE_TINDEX  = 6
 KOT_ELEMENT_RECT            = 7
+KOT_ELEMENT_GENERIC_NAME    = 8
 
 KOT_PLAYER_LOOK_UP          = 0
 KOT_PLAYER_LOOK_DOWN        = 1
@@ -187,6 +188,8 @@ class kotWorld:
         if callable(self.atWorldUpdate):
             self.atWorldUpdate()
     
+    # -- past initWorld --
+
     def loadWorldElements(self, world):
         """loadWorldElements: load the world elements, but this will erase
         everything, if you want to load only the texture, see the 
@@ -200,7 +203,6 @@ class kotWorld:
             ePosition       = element.get("position")
             eTexture        = element.get("texture")
             eTextureGot     = self.kotSharedStorage.getContentBySpecification(eTexture)
-            print(eTextureGot)
             eTextureType    = (1 if eTexture['type'] == 'sprite' else 0)
             # generate a new element.
             self.newElement(
@@ -209,7 +211,8 @@ class kotWorld:
                 eSize=eSize,
                 eTexture=eTextureGot,
                 eTextureType=eTextureType,
-                ePosition=ePosition
+                ePosition=ePosition,
+                eGenericName=eGenericName
             )
     
     def __generateDecorationTrees(self, world):
@@ -267,6 +270,7 @@ class kotWorld:
         eSize:          the size of the object.
         eTexture:       the texture for the object.
         eTextureType:   the type of texture used by the element.
+        eGenericName:   the generic name of such element.
         """
         # NOTE: the objects must have a name.
         elementName             = kwargs.get("eName")       ;   assert elementName, "newElement: couldn't find a name."
@@ -274,6 +278,7 @@ class kotWorld:
         elementSize             = kwargs.get("eSize")       ;   assert elementSize, "newElement: couldn't find the size for element."
         elementTexture          = kwargs.get("eTexture")    ;   assert elementTexture, "newElement: element needs a texture."
         elementTextureType      = kwargs.get("eTextureType")
+        elementGenericName      = kwargs.get("eGenericName") or "unknown"
         # calculate the position and begin to set the rectangle.
         elementPositionAbsolute = [elementPosition[0] * world.bTileSize, elementPosition[1] * world.bTileSize]
         elementRect             = pygame.Rect((elementPositionAbsolute[0],elementPositionAbsolute[1]),(elementSize[0], elementSize[1]))
@@ -297,7 +302,9 @@ class kotWorld:
             # next animation to appear.
             0,
             # 7: elementRect: for collision and etc.
-            elementRect
+            elementRect,
+            # 8: elementGenericName: some generic name for later getElementByGenericName()
+            elementGenericName
         ])
     
     #
@@ -431,7 +438,7 @@ class kotWorld:
 
     def draw(self):
         """draw: this will draw all the element."""
-        self.cleanViewport()
-        self.drawBackground()
-        self.drawElements()
-        self.drawPlayer()
+        self.cleanViewport()            # clean the viewport to exhibit the new stuff.
+        self.drawBackground()           # draw the background
+        self.drawElements()             # & elements
+        self.drawPlayer()               # & finally the players.
