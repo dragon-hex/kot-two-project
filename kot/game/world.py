@@ -20,6 +20,7 @@ KOT_ELEMENT_TEXTURE_INDEX   = 5
 KOT_ELEMENT_TEXTURE_TINDEX  = 6
 KOT_ELEMENT_RECT            = 7
 KOT_ELEMENT_GENERIC_NAME    = 8
+KOT_ELEMENT_TEXTURE_DATA    = 9
 
 KOT_PLAYER_LOOK_UP          = 0
 KOT_PLAYER_LOOK_DOWN        = 1
@@ -123,20 +124,23 @@ class kotWorld:
         """getWorldPath: return the world path."""
         return self.kotSharedStorage.gamePath+"data/%s.json"%(prefix+levelName)
 
-    def __loadTemporaryWorld(self):
+    def __loadTemporaryWorld(self, level=0):
         """return the level0 world."""
-        print(self.getWorldPath("0"))
-        return jsonLoad(self.getWorldPath("0"))
+        level = str(level)
+        print(self.getWorldPath(level))
+        return jsonLoad(self.getWorldPath(level))
         
     def __initTemporaryWorld(self):
         """__initTemporaryWorld: the temporary world is a simple world
         which is a simple block."""
         self.loadWorld(self.__loadTemporaryWorld())
+        self.loadWorld(self.__loadTemporaryWorld(level=1))
 
     def loadWorld(self, data):
         """loadWorld: basically load the world and store it on the
         world storage list."""
         # NOTE: create a prototype world class here.
+        print("loading", data)
         protoWorld      = kotWorldStorage()
         worldData       = data['data']
         worldBackground = data['world']
@@ -187,6 +191,20 @@ class kotWorld:
         # on the main game to show the worldCard.
         if callable(self.atWorldUpdate):
             self.atWorldUpdate()
+        
+    def unloadWorldElements(self, world):
+        """unloadWorldElements: remove the world element texture."""
+        # remove the old elements.
+        for element in world.elements:
+            element[KOT_ELEMENT_TEXTURE] = None
+        
+    def regenerateWorldElements(self, world):
+        """regenerateWorldElements: basically load all the elements."""
+        for element in world.elements:
+            elementData = element[KOT_ELEMENT_TEXTURE_DATA]
+            print(elementData)
+            element[KOT_ELEMENT_TEXTURE] = self.kotSharedStorage.getContentBySpecification(elementData)
+            print(element[KOT_ELEMENT_TEXTURE])
     
     # -- past initWorld --
 
@@ -212,29 +230,30 @@ class kotWorld:
                 eTexture=eTextureGot,
                 eTextureType=eTextureType,
                 ePosition=ePosition,
-                eGenericName=eGenericName
+                eGenericName=eGenericName,
+                eTextureData=eTexture
             )
     
     def __generateDecorationTrees(self, world):
         """__generateDecorationTrees: this is a internal engine function
         that generate some random trees on your world for demo proporses."""
-        listTexturesForTrees    = self.kotSharedStorage.getContentBySpecification(world.tTexture)
-        randomGenerator         = random.Random()
-        randomGenerator.seed(world.tSeed) 
-        # NOTE: the range for tree generation is always 1 to 10.
-        # setup the texture index.
-        numberForTheTree = randomGenerator.randint(1,10)
+        randomGenerated = random.Random()
+        randomGenerated.seed(world.tSeed)
+        generateTreeWhen = random.randint(1, 10)
+        listTextureOrdered = self.kotSharedStorage.getContentBySpecification(world.tTexture,ordered=True)
         for yIndex in range(0, world.bSize[1]):
             for xIndex in range(0, world.bSize[0]):
-                # randomly generate trees.
-                generateTree = randomGenerator.randint(1,10)
-                if generateTree == numberForTheTree:
-                    self.newElement(world, 
-                        eName="generic.tree00-%d-%d"%(xIndex,yIndex),
-                        ePosition=[xIndex,yIndex],
+                treeKey = randomGenerated.choice(list(listTextureOrdered.keys()))
+                if randomGenerated.randint(1, 10) == generateTreeWhen:
+                    self.newElement(
+                        world,
+                        eName="tree-%d-%d" % (xIndex, yIndex),
+                        ePosition=[xIndex, yIndex],
                         eSize=[64, 64],
-                        eTexture=random.choice(listTexturesForTrees),
-                        eTextureType=0
+                        eTexture=[listTextureOrdered[treeKey]],
+                        eTextureType=1,
+                        eGenericName="tree00",
+                        eTextureData={'name':world.tTexture['name'],'type':"sprite","only":[treeKey]}
                     )
     
     def __loadWorldBackground(self, world):
@@ -271,6 +290,7 @@ class kotWorld:
         eTexture:       the texture for the object.
         eTextureType:   the type of texture used by the element.
         eGenericName:   the generic name of such element.
+        eTextureData:   the texture to be regenerated.
         """
         # NOTE: the objects must have a name.
         elementName             = kwargs.get("eName")       ;   assert elementName, "newElement: couldn't find a name."
@@ -279,6 +299,7 @@ class kotWorld:
         elementTexture          = kwargs.get("eTexture")    ;   assert elementTexture, "newElement: element needs a texture."
         elementTextureType      = kwargs.get("eTextureType")
         elementGenericName      = kwargs.get("eGenericName") or "unknown"
+        elementTextureData      = kwargs.get("eTextureData")
         # calculate the position and begin to set the rectangle.
         elementPositionAbsolute = [elementPosition[0] * world.bTileSize, elementPosition[1] * world.bTileSize]
         elementRect             = pygame.Rect((elementPositionAbsolute[0],elementPositionAbsolute[1]),(elementSize[0], elementSize[1]))
@@ -304,8 +325,17 @@ class kotWorld:
             # 7: elementRect: for collision and etc.
             elementRect,
             # 8: elementGenericName: some generic name for later getElementByGenericName()
-            elementGenericName
+            elementGenericName,
+            # 9: elementTextureData: setup the data.
+            elementTextureData
         ])
+
+    def changeWorld(self, worldKey):
+        """changeWorld: change the world to the pointed world."""
+        self.unloadWorldElements(self.world)
+        self.world = self.worlds[worldKey]
+        self.regenerateWorldElements(self.world)
+        self.__loadWorldBackground(self.world)
     
     #
     # -- tick the world --
@@ -337,8 +367,8 @@ class kotWorld:
     def movePrecise(self, xDir, yDir):
         """movePrecise: this is a more expansive move function, this will
         try to move precisely to the max possible direction."""
-        maxHitX = 0     ; isXNeg = xDir < 0
-        maxHitY = 0     ; isYNeg = yDir < 0
+        maxHitX = 0     ; isXNeg = (xDir < 0)
+        maxHitY = 0     ; isYNeg = (yDir < 0)
         for hitX in range(0, -(xDir) if isXNeg else xDir):
             if self.moveTest(-hitX if isXNeg else hitX, 0):
                 break
@@ -364,9 +394,9 @@ class kotWorld:
                 self.playerTexIndexT = pygame.time.get_ticks() + (2 * 1000) 
         else:
             # change the player direction.
-            self.playerLookAt = whatDirection
-            self.playerTexIndex = 0
-            self.playerTexIndexT = 0
+            self.playerLookAt       = whatDirection
+            self.playerTexIndex     = 0
+            self.playerTexIndexT    = 0
     
     def updateWorldElements(self):
         """updateWorldElements: update all the world elements that can
@@ -380,12 +410,16 @@ class kotWorld:
                     # TODO: MAKE THE SPRITE HAVE A CUSTOM TIME!
                     element[KOT_ELEMENT_TEXTURE_TINDEX] = pygame.time.get_ticks() + (1 * 1000)
 
-
     def tick(self, eventList):
         # NOTE: the move precision is set by the world at the beginning!
         # if you using some action platformer that require a high precision
         # level on the element collisions, please, read the DOC about this
         # mode.
+        for event in eventList:
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_F2:
+                    self.changeWorld("level0.lirusekaa" if self.world.genericName != "level0.lirusekaa" else "level-1.lirusekaa")
+
         keyPressed = pygame.key.get_pressed()
         if      keyPressed[KEYS_UP[0]]      or keyPressed[KEYS_UP[1]]:
             self.changePlayerLookAt(KOT_PLAYER_LOOK_UP)
