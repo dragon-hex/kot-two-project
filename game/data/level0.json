@@ -32,14 +32,21 @@
         {
             "name":             "testSprite",
             "genericName":      "testSprite0",
-            "texture":          {"name":"axc_grass0","type":"sprite"},
+            "texture":          {"name":"kotSecretLevelImage","type":"image"},
             "size":             [64, 64],
             "position":         [2, 2]
         },
         {
             "name":             "anotherTestSprite",
             "genericName":      "testSprite1",
-            "texture":          {"name":"axc_grass0","type":"sprite"},
+            "texture":          {"name":"axc_tree0","type":"sprite"},
+            "size":             [64, 64],
+            "position":         [3, 2]
+        },
+        {
+            "name":             "oopsie!",
+            "genericName":      "testSprite2",
+            "texture":          {"name":"axc_tree0","type":"sprite", "only":["tree00","tree01"]},
             "size":             [64, 64],
             "position":         [4, 2]
         }
