@@ -1,0 +1,52 @@
+{
+    // this is the copy of level 0, but with some modifications
+    "data": {
+        "name"          : "Another Liru World",
+        "genericName"   : "level-1.lirusekaa",
+        "icon"          : {"name":"kotSecretLevelImage","type":"image","size":64},
+        "iconSize"      : 64
+    },
+    // the world settings: stores all the world configuration
+    // that is needed for the world generation, such as size,
+    // tile size, texture and etc.
+    "world": {
+        // define the world here.
+        "bSeed"     : 2,
+        "bSize"     : [10, 10],
+        "bTexture"  : {"name":"axc_grass0", "type":"sprite"},
+        "bTileSize" : 64,
+        // since this is a test level, generate some trees with
+        // the hidden function "tree", this is just some static
+        // trees arround the map.
+        "trees"     : true,
+        "tTexture"  : {"name":"axc_tree0", "type":"sprite"},
+        "tSeed"     : 0
+    },
+    "elements":  [
+        // some examples of elements here.
+        // the elements are formed by a name, a genericName (used on the id)
+        // a texture that follows the same style as the other textures,
+        // the size of such object.
+        {
+            "name":             "testSprite",
+            "genericName":      "testSprite0",
+            "texture":          {"name":"kotSecretLevelImage","type":"image"},
+            "size":             [64, 64],
+            "position":         [2, 2]
+        },
+        {
+            "name":             "anotherTestSprite",
+            "genericName":      "testSprite1",
+            "texture":          {"name":"axc_tree0","type":"sprite"},
+            "size":             [64, 64],
+            "position":         [3, 2]
+        },
+        {
+            "name":             "oopsie!",
+            "genericName":      "testSprite2",
+            "texture":          {"name":"axc_tree0","type":"sprite", "only":["tree00","tree01"]},
+            "size":             [64, 64],
+            "position":         [4, 2]
+        }
+    ]
+}
