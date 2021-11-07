@@ -160,4 +160,14 @@ class kotSharedStorage:
         elif    targetType == KOT_CONTENT_TYPE_SPRITE:
             # TODO: finish the sprite logic for LOCKED sprites
             # and animated sprites from BEGIN to END ranges.
-            return self.getSprites(targetName)
+            targetSpriteOnly = whatData.get('only')
+            if targetSpriteOnly == None:
+                return self.getSprites(targetName)
+            else:
+                # TODO: return just a image.
+                spritesGot = self.getSprites(targetName,ordered=True)
+                finalSheet = []
+                for sprite in spritesGot.keys():
+                    if sprite in targetSpriteOnly:
+                        finalSheet.append(spritesGot[sprite])
+                return finalSheet
