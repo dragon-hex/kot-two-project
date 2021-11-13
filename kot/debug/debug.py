@@ -18,3 +18,4 @@ class kotDebug:
                 self.logIndex,              # -> the message index;
                 string                      # -> and finally the string.
             ))
+            self.logIndex += 1
