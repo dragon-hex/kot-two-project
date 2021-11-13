@@ -19,12 +19,13 @@ class kotWindow:
         self.__applyTheIcon()
     def windowInit(self):
         """windowInit: initializes the window."""
-        self.surface = pygame.display.set_mode(self.size)
+        self.surface = pygame.display.set_mode(self.size,pygame.RESIZABLE)
         pygame.display.set_caption(self.caption)
         self.__applyTheIcon()
     def windowUpdateProperties(self):
         """windowUpdateProperties: update the window properties."""
         pygame.display.set_caption(self.caption)
+        pygame.display.set_mode(self.size,pygame.RESIZABLE)
         self.__applyTheIcon()
 
 class kotSharedCore:
