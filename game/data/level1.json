@@ -20,7 +20,7 @@
         // trees arround the map.
         "trees"     : true,
         "tTexture"  : {"name":"axc_tree0", "type":"sprite"},
-        "tSeed"     : 0
+        "tSeed"     : 42
     },
     "elements":  [
         // some examples of elements here.
