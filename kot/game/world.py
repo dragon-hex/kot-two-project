@@ -1,9 +1,11 @@
 # pygame & random
 import pygame
 import random
+import sys
 
 # kot.utils
 from kot.utils import jsonLoad
+from kot.debug import kotDebug
 
 # -- keymap --
 KEYS_UP         = [pygame.K_UP,     pygame.K_w]
@@ -28,6 +30,8 @@ KOT_PLAYER_LOOK_LEFT        = 2
 KOT_PLAYER_LOOK_RIGHT       = 3
 
 # -- project modifiers --
+
+DEBUG_THIS_FILE             = True
 
 # -- the main world stuff --
 class kotWorldStorage: 
@@ -59,9 +63,14 @@ class kotWorld:
     def __init__(self, kotSharedCore, kotSharedStorage, viewport):
         """kotWorld: this is sector responsible for the world generation
         and control, that why it needs the shared cores."""
+        # NOTE: if you debugging this file, please read the
+        # doc for more information.
+        self.debug = kotDebug(output=sys.stdout,logFrom='world')
+        self.debug.enabled = DEBUG_THIS_FILE
+        # init the shared stuff.
         self.kotSharedCore      = kotSharedCore
         self.kotSharedStorage   = kotSharedStorage
-        self.viewport           = viewport
+        self.viewport           = pygame.Surface(viewport)
         # -- the world storage --
         self.world          = None
         self.worlds         = {}
@@ -79,13 +88,16 @@ class kotWorld:
         self.playerTexIndexT= 0
         # -- setup event --
         self.atWorldUpdate = None
+        self.debug.write("finished to build kotWorld class.")
     
     #
     # -- init stuff phase --
     #
     def init(self):
         """init: init the engine components."""
+        self.debug.write("initializing temporary player texture.")
         self.__initTemporaryPlayerTexture()
+        self.debug.write("initializing temporary world.")
         self.__initTemporaryWorld()
 
     #
@@ -116,6 +128,8 @@ class kotWorld:
         # that meaning the direction it is looking.
         self.playerTexIndex = 0
         self.playerTexIndexT = 0
+        # debug here
+        self.debug.write("player temporary texture generated %s" % str(self.playerSize))
     
     #
     # -- world init --
@@ -127,7 +141,7 @@ class kotWorld:
     def __loadTemporaryWorld(self, level=0):
         """return the level0 world."""
         level = str(level)
-        print(self.getWorldPath(level))
+        self.debug.write("temporary level %s" % self.getWorldPath(level))
         return jsonLoad(self.getWorldPath(level))
         
     def __initTemporaryWorld(self):
@@ -140,7 +154,6 @@ class kotWorld:
         """loadWorld: basically load the world and store it on the
         world storage list."""
         # NOTE: create a prototype world class here.
-        print("loading", data)
         protoWorld      = kotWorldStorage()
         worldData       = data['data']
         worldBackground = data['world']
@@ -190,21 +203,22 @@ class kotWorld:
         # or the world controller, this will make a event
         # on the main game to show the worldCard.
         if callable(self.atWorldUpdate):
+            self.debug.write("triggering action for atWorldUpdate.")
             self.atWorldUpdate()
         
     def unloadWorldElements(self, world):
         """unloadWorldElements: remove the world element texture."""
         # remove the old elements.
+        self.debug.write("unloading %d elements for world '%s'" % (len(world.elements),world.name))
         for element in world.elements:
             element[KOT_ELEMENT_TEXTURE] = None
         
     def regenerateWorldElements(self, world):
         """regenerateWorldElements: basically load all the elements."""
+        self.debug.write("regenerating %d elements for world '%s'" % (len(world.elements),world.name))
         for element in world.elements:
             elementData = element[KOT_ELEMENT_TEXTURE_DATA]
-            print(elementData)
             element[KOT_ELEMENT_TEXTURE] = self.kotSharedStorage.getContentBySpecification(elementData)
-            print(element[KOT_ELEMENT_TEXTURE])
     
     # -- past initWorld --
 
@@ -225,18 +239,21 @@ class kotWorld:
             # generate a new element.
             self.newElement(
                 world,
-                eName=eName,
-                eSize=eSize,
-                eTexture=eTextureGot,
+                eName       =eName,
+                eSize       =eSize,
+                eTexture    =eTextureGot,
                 eTextureType=eTextureType,
-                ePosition=ePosition,
+                ePosition   =ePosition,
                 eGenericName=eGenericName,
                 eTextureData=eTexture
             )
+            # debug
+            self.debug.write("element '%s' was loaded for world '%s'" % (eName, world.name))
     
     def __generateDecorationTrees(self, world):
         """__generateDecorationTrees: this is a internal engine function
         that generate some random trees on your world for demo proporses."""
+        self.debug.write("generating decoration trees")
         randomGenerated = random.Random()
         randomGenerated.seed(world.tSeed)
         generateTreeWhen = random.randint(1, 10)
@@ -279,6 +296,8 @@ class kotWorld:
                     worldTileSize * xIndex,
                     worldTileSize * yIndex
                 ))
+        # debug
+        self.debug.write("loaded background for world '%s', size: '%s'" % (world.name, str(self.worldBackground.get_size())))
     
     def newElement(self, world, **kwargs):
         """newElement: function to generate a new element on the world.
@@ -300,6 +319,8 @@ class kotWorld:
         elementTextureType      = kwargs.get("eTextureType")
         elementGenericName      = kwargs.get("eGenericName") or "unknown"
         elementTextureData      = kwargs.get("eTextureData")
+        # debug
+        self.debug.write("new element being created: %s" % elementName)
         # calculate the position and begin to set the rectangle.
         elementPositionAbsolute = [elementPosition[0] * world.bTileSize, elementPosition[1] * world.bTileSize]
         elementRect             = pygame.Rect((elementPositionAbsolute[0],elementPositionAbsolute[1]),(elementSize[0], elementSize[1]))
@@ -332,6 +353,7 @@ class kotWorld:
 
     def changeWorld(self, worldKey):
         """changeWorld: change the world to the pointed world."""
+        self.debug.write("changing world from %s -> %s" % (self.world.name, worldKey))
         self.unloadWorldElements(self.world)
         self.world = self.worlds[worldKey]
         self.regenerateWorldElements(self.world)
@@ -419,6 +441,8 @@ class kotWorld:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_F2:
                     self.changeWorld("level0.lirusekaa" if self.world.genericName != "level0.lirusekaa" else "level-1.lirusekaa")
+            if event.type == pygame.VIDEORESIZE:
+                self.videoResizeEvent(event.w, event.h)
 
         keyPressed = pygame.key.get_pressed()
         if      keyPressed[KEYS_UP[0]]      or keyPressed[KEYS_UP[1]]:
@@ -436,6 +460,34 @@ class kotWorld:
         
         # update the elements (sprites)
         self.updateWorldElements()
+    
+    #
+    # -- video resize event & other subevents --
+    #
+    def vre_RecalculatePlayerPosition(self, prevSize, newSize):
+        """vre: videoResizeEvent, this function will recalculate the player
+        position, since the player is always on the center, it is very hard
+        to check where the old position should be."""
+        # NOTE: this worlds like this: calculate the number of spaces that has
+        # changed from the last resize.
+        newSizeX, newSizeY              = newSize[0], newSize[1]
+        newPlayerPosX, newPlayerPosY    = (newSizeX // 2 - self.playerSize[0] // 2), (newSizeY // 2 - self.playerSize[1] // 2)
+        playerOldPos                    = (self.playerRect.x, self.playerRect.y)
+        self.playerRect.x, self.playerRect.y = newPlayerPosX, newPlayerPosY
+        self.move(
+            self.playerRect.x - playerOldPos[0],
+            self.playerRect.y - playerOldPos[1]
+        )
+
+
+    def videoResizeEvent(self, newSizeX, newSizeY):
+        """videoResizeEvent: update the viewport and etc."""
+        previousViewportSize = self.viewport.get_size() ;   del self.viewport
+        self.debug.write("new size for viewport [w = %d, h = %d]" % (newSizeX, newSizeY))
+        self.viewport = pygame.Surface((newSizeX, newSizeY))
+        self.viewport.fill((0, 0, 0))
+        # NOTE: important step, recalculate the world position!
+        self.vre_RecalculatePlayerPosition(previousViewportSize,self.viewport.get_size())
 
     # 
     # -- draw the world --
