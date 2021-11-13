@@ -10,7 +10,6 @@ class kotGame:
         load the save you put. But, first run the menu."""
         self.kotSharedCore = kotSharedCore
         self.kotSharedStorage = kotSharedStorage
-        self.kotViewport = None
         self.kotViewportPosition = [0, 0]
         self.kotWorlds = None
         # -- control some internal events --
@@ -28,11 +27,11 @@ class kotGame:
     def initViewport(self):
         """initViewport: the viewport is what the name sugests, it generates
         a screen sized buffer."""
-        self.kotViewport = pygame.Surface(self.kotSharedCore.window.surface.get_size())
+        pass
     
     def initWorlds(self):
         """initWorlds: init the worlds."""
-        self.kotWorlds = kotWorld(self.kotSharedCore, self.kotSharedStorage, self.kotViewport)
+        self.kotWorlds = kotWorld(self.kotSharedCore, self.kotSharedStorage, self.kotSharedCore.window.surface.get_size())
         self.kotWorlds.atWorldUpdate = lambda: self.__atWorldUpdate()
         self.kotWorlds.init()
 
@@ -73,12 +72,21 @@ class kotGame:
     def performSubroutines(self):
         """performSubroutines: perform some important subroutines."""
         self.__reliefSubRoutine()       # keep the cache memory low as possible.
+    
+    def videoResizeEvent(self, newSizeX, newSizeY):
+        """videoResizeEvent: this will automatically reconfigurate the entire
+        game, like updating the screen size, etc."""
+        self.kotSharedCore.window.size = [newSizeX, newSizeY]
+        self.kotSharedCore.window.windowUpdateProperties()
 
     def tick(self, eventList):
         """tick: tick the game events."""
         for event in eventList:
             if event.type == pygame.QUIT:
                 self.__atQuit()
+            if event.type == pygame.VIDEORESIZE:
+                self.videoResizeEvent(event.w, event.h)
+
         # ticks
         self.coreUI.tick(eventList)             # tick the core GUI
         self.__updateDebugGui()                 # tick the DEBUG GUI
@@ -90,7 +98,7 @@ class kotGame:
     #
     def updateViewport(self):
         """updateViewport: basically update the viewport.""" 
-        self.kotSharedCore.window.surface.blit(self.kotViewport,self.kotViewportPosition)
+        self.kotSharedCore.window.surface.blit(self.kotWorlds.viewport,self.kotViewportPosition)
     
     def drawWorldCard(self):
         """showWorldCard: shows the world icon + name."""
