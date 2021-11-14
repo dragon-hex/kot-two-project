@@ -33,7 +33,6 @@ KOT_PLAYER_LOOK_LEFT        = 2
 KOT_PLAYER_LOOK_RIGHT       = 3
 
 # -- project modifiers --
-
 DEBUG_THIS_FILE             = True
 
 # -- utils --
