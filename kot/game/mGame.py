@@ -31,7 +31,7 @@ class kotGame:
     
     def initWorlds(self):
         """initWorlds: init the worlds."""
-        self.kotWorlds = kotWorld(self.kotSharedCore, self.kotSharedStorage, self.kotSharedCore.window.surface.get_size())
+        self.kotWorlds = kotWorld(self.kotSharedCore, self.kotSharedStorage)
         self.kotWorlds.atWorldUpdate = lambda: self.__atWorldUpdate()
         self.kotWorlds.init()
 
