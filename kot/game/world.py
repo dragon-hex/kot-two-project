@@ -66,7 +66,7 @@ class kotWorldStorage:
         self.uniqueId   = generateUniqueId()
 
 class kotWorld:
-    def __init__(self, kotSharedCore, kotSharedStorage, viewport):
+    def __init__(self, kotSharedCore, kotSharedStorage):
         """kotWorld: this is sector responsible for the world generation
         and control, that why it needs the shared cores."""
         # NOTE: if you debugging this file, please read the
@@ -76,7 +76,7 @@ class kotWorld:
         # init the shared stuff.
         self.kotSharedCore      = kotSharedCore
         self.kotSharedStorage   = kotSharedStorage
-        self.viewport           = pygame.Surface(viewport)
+        self.viewport           = pygame.Surface(kotSharedCore.window.surface.get_size())
         # -- the world storage --
         self.world          = None
         self.worlds         = {}
@@ -511,28 +511,8 @@ class kotWorld:
     #
     # -- video resize event & other subevents --
     #
-    def vre_RecalculateWorldsPlayerPosition(self, newSize):
-        """vre_RecalculateWorldsPlayerPosition: move all the player
-        positions on the other worlds, this is a very expansive process
-        and important.
-        """
-        worldKeys = list(self.worlds.keys())
-        for worldKey in worldKeys:
-            if self.world.uniqueId == self.worlds[worldKey].uniqueId:
-                # NOTE: pass because we already calculated this world
-                # position.
-                self.debug.write("not moving for world = %s" % self.worlds[worldKey].name)
-                pass
-            else:
-                self.debug.write("changing for world = %s | %s" % (self.worlds[worldKey].name, self.worlds[worldKey].uniqueId))
-                # move all the world elements + camera
-                self.worlds[worldKey].camera[0] += newSize[0]
-                self.worlds[worldKey].camera[1] += newSize[1]
-                for element in self.worlds[worldKey].elements:
-                    element[KOT_ELEMENT_RECT].x += newSize[0]
-                    element[KOT_ELEMENT_RECT].y += newSize[1]
-
-    def vre_RecalculatePlayerPosition(self, prevSize, newSize):
+    
+    def RecalculateEverythingResizeEvent(self, prevSize, newSize):
         """vre: videoResizeEvent, this function will recalculate the player
         position, since the player is always on the center, it is very hard
         to check where the old position should be."""
@@ -545,8 +525,12 @@ class kotWorld:
         posX, posY                              = self.playerRect.x - playerOldPos[0], self.playerRect.y - playerOldPos[1]
         # NOTE: move this world camera & the other worlds
         # this needs to be done because the camera is always on the center.
-        self.move(self.world, posX, posY)
-        self.vre_RecalculateWorldsPlayerPosition((posX, posY))
+        for world in self.worlds.keys():
+            self.worlds[world].camera[0] += posX
+            self.worlds[world].camera[1] += posY
+            for element in self.worlds[world].elements:
+                element[KOT_ELEMENT_RECT].x += posX
+                element[KOT_ELEMENT_RECT].y += posY
 
 
     def videoResizeEvent(self, newSizeX, newSizeY):
@@ -556,7 +540,7 @@ class kotWorld:
         self.viewport = pygame.Surface((newSizeX, newSizeY))
         self.viewport.fill((0, 0, 0))
         # NOTE: important step, recalculate the world position!
-        self.vre_RecalculatePlayerPosition(previousViewportSize,self.viewport.get_size())
+        self.RecalculateEverythingResizeEvent(previousViewportSize,self.viewport.get_size())
 
     # 
     # -- draw the world --
