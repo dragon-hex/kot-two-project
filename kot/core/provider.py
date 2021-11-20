@@ -123,7 +123,7 @@ class kotSharedStorage:
         if not fromCache:
             # then load the font from the disk.
             font = None
-            try: font = pygame.font.Load(fontPath)
+            try: font = pygame.font.Font(fontPath,fontSize)
             except Exception as E:
                 # TODO: make a error hook here.
                 return False
