@@ -1,0 +1,8 @@
+{
+    "initList": [
+        "level0",
+        "level1"
+    ],
+    // TODO: remove this on the last version before 1.0.0
+    "loadAtInit":"level0.lirusekaa"
+}
