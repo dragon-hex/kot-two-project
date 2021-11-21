@@ -2,7 +2,7 @@ import pygame
 import math
 
 class graph:
-    def __init__(self, atDisplay, size=[80, 40]):
+    def __init__(self, atDisplay, size=[100, 50]):
         # element props
         self.type       = "graph"
         self.display    = atDisplay
