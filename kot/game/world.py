@@ -1,4 +1,5 @@
 # pygame & random
+import json
 import pygame
 import random
 import sys
@@ -102,10 +103,7 @@ class kotWorld:
     #
     def init(self):
         """init: init the engine components."""
-        self.debug.write("initializing temporary player texture.")
         self.__initTemporaryPlayerTexture()
-        self.debug.write("initializing temporary world.")
-        self.__initTemporaryWorld()
 
     #
     # -- player stuff --
@@ -141,23 +139,13 @@ class kotWorld:
     #
     # -- world init --
     #
-    def getWorldPath(self, levelName, prefix="level"):
-        """getWorldPath: return the world path."""
-        return self.kotSharedStorage.gamePath+"data/%s.json"%(prefix+levelName)
+    def loadWorldByPath(self, name):
+        """loadWorldByName: loads the world by it's path"""
+        jsonData = jsonLoad(name)
+        self.loadWorldByData(jsonData)
 
-    def __loadTemporaryWorld(self, level=0):
-        """return the level0 world."""
-        level = str(level)
-        self.debug.write("temporary level %s" % self.getWorldPath(level))
-        return jsonLoad(self.getWorldPath(level))
-        
-    def __initTemporaryWorld(self):
-        """__initTemporaryWorld: the temporary world is a simple world
-        which is a simple block."""
-        self.loadWorld(self.__loadTemporaryWorld())
-        self.loadWorld(self.__loadTemporaryWorld(level=1))
 
-    def loadWorld(self, data):
+    def loadWorldByData(self, data):
         """loadWorld: basically load the world and store it on the
         world storage list."""
         # NOTE: create a prototype world class here.
@@ -201,8 +189,6 @@ class kotWorld:
 
         # save the world.
         self.worlds[protoWorld.genericName] = protoWorld
-        self.world = self.worlds[protoWorld.genericName]
-        self.onWorld = protoWorld.genericName
         
         # low-level configurations
         self.usingMove = self.move
@@ -368,8 +354,10 @@ class kotWorld:
 
     def changeWorld(self, worldKey):
         """changeWorld: change the world to the pointed world."""
-        self.debug.write("changing world from %s -> %s" % (self.world.name, worldKey))
-        self.unloadWorldElements(self.world)
+        # NOTE: this was fixed and adapted to support a self.world being NONE!
+        self.debug.write("changing world from %s -> %s" % ((self.world.name if self.world else 'null'), worldKey))
+        if self.world:
+            self.unloadWorldElements(self.world)
         self.world = self.worlds[worldKey]
         self.regenerateWorldElements(self.world)
         self.__loadWorldBackground(self.world)
@@ -453,10 +441,11 @@ class kotWorld:
                     element[KOT_ELEMENT_TEXTURE_TINDEX] = pygame.time.get_ticks() + (1 * 1000)
 
     def tick(self, eventList):
-        # NOTE: the move precision is set by the world at the beginning!
-        # if you using some action platformer that require a high precision
-        # level on the element collisions, please, read the DOC about this
-        # mode.
+        # NOTE: case any world is loaded, just ignore it.
+
+        #
+        # process the single-time events.
+        #
         for event in eventList:
             if event.type == pygame.KEYDOWN:
                 if event.key == KEY_DEBUG_SCREEN:
@@ -469,6 +458,10 @@ class kotWorld:
             if event.type == pygame.VIDEORESIZE:
                 # trigger all the element resize.
                 self.videoResizeEvent(event.w, event.h)
+
+        # check if the game has some world loaded
+        if not self.world:
+            return
 
         # 
         # process the keys that are used for movement.
@@ -490,22 +483,23 @@ class kotWorld:
         # update the elements (sprites)
         self.updateWorldElements(self.world)
         if self.__worldTestElementMovement:
-            self.test_MoveElements()
+            self.TestMoveElementsRandomDirections(self.world)
     
     #
     # -- test functions --
     #
 
-    def test_MoveElements(self):
+    def TestMoveElementsRandomDirections(self, world):
         """test function (moveElements): this will move the elements
         around the map."""
-        movements = [1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6]
-        for element in self.world.elements:
-            newX = element[KOT_ELEMENT_RECT].x + random.choice(movements)
-            if newX > 0 and newX < self.worldBackground.get_size()[0]:
+        movements = [key for key in range(-10,10)]
+        for element in world.elements:
+            move_direction = random.choice(movements)
+            if move_direction > 0:
+                newX = element[KOT_ELEMENT_RECT].x + random.choice(movements)
                 element[KOT_ELEMENT_RECT].x = newX
-            newY = element[KOT_ELEMENT_RECT].y + random.choice(movements)
-            if newY > 0 and newY < self.worldBackground.get_size()[1]:
+            elif move_direction <= 0:
+                newY = element[KOT_ELEMENT_RECT].y + random.choice(movements)
                 element[KOT_ELEMENT_RECT].y = newY
     
     #
@@ -516,6 +510,7 @@ class kotWorld:
         """vre: videoResizeEvent, this function will recalculate the player
         position, since the player is always on the center, it is very hard
         to check where the old position should be."""
+        # TODO: make this use a better way to draw, by using offsets.
         # NOTE: this worlds like this: calculate the number of spaces that has
         # changed from the last resize.
         newSizeX, newSizeY                      = newSize[0], newSize[1]
@@ -537,10 +532,18 @@ class kotWorld:
         """videoResizeEvent: update the viewport and etc."""
         previousViewportSize = self.viewport.get_size() ;   del self.viewport
         self.debug.write("new size for viewport [w = %d, h = %d]" % (newSizeX, newSizeY))
+
         self.viewport = pygame.Surface((newSizeX, newSizeY))
         self.viewport.fill((0, 0, 0))
+        
         # NOTE: important step, recalculate the world position!
-        self.RecalculateEverythingResizeEvent(previousViewportSize,self.viewport.get_size())
+        if self.playerRect:
+            self.debug.write("player is loaded, invoking: RecalculateEverythingResizeEvent()")
+            self.RecalculateEverythingResizeEvent(previousViewportSize,self.viewport.get_size())
+        else:
+            # NOTE: case the player is not loaded, then don't run everything.
+            # the game is on the stage where no world is loaded.
+            self.debug.write("player is not loaded! resizing only viewport.")
 
     # 
     # -- draw the world --
@@ -575,10 +578,29 @@ class kotWorld:
             self.playerTextures[self.playerLookAt][self.playerTexIndex],
             self.playerRect
         )
+    
+    def drawNoWorldLoadedText(self):
+        """drawNoWorldLoadedText: this will draw a message on the center of the
+        screen, showing the message, no world loaded."""
+        __renderedText = self.kotSharedStorage.getFont("normal",16)
+        __renderedText = __renderedText.render("No world loaded, yet.",True,(00,00,00),(0xff,0xff,0xff))
+        self.viewport.blit(
+            __renderedText,
+            (
+                self.viewport.get_width()//2 - __renderedText.get_width()//2,
+                self.viewport.get_height()//2 - __renderedText.get_height()//2
+            )
+        )
 
     def draw(self):
         """draw: this will draw all the element."""
-        self.cleanViewport()            # clean the viewport to exhibit the new stuff.
-        self.drawBackground()           # draw the background
-        self.drawElements()             # & elements
-        self.drawPlayer()               # & finally the players.
+        if self.world:
+            self.cleanViewport()            # clean the viewport to exhibit the new stuff.
+            self.drawBackground()           # draw the background
+            self.drawElements()             # & elements
+            self.drawPlayer()               # & finally the players.
+        else:
+            # NOTE: case there isn't any world loaded, then
+            # just show this screen.
+            self.cleanViewport()
+            self.drawNoWorldLoadedText()
