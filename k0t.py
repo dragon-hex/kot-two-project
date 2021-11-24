@@ -1,99 +1,98 @@
-# -- import the modules here --
-import os
+# import modules
+import os, sys
+import pygame
 import time
-# -- constants --
-KOT_FPS_LOCK = 60
-# -- pre phase: basic stuff. --
-def panic(string, exception):
-    """panic: basically kill the program."""
-    print("[panic]: %s\n[panic]: %s" % (string,str(exception)))
-    exit(-1)
-# -- init phase: import modules --
-try:    import pygame
-except Exception as E: panic("pygame error",E)
-try:    import kot
-except Exception as E: panic("kot error",E)
-# -- continuous phase: basically everything here. --
-class kotInstance:
-    #
-    # init the class here.
-    #
+# import the kot module
+import kot
+
+# -- || -- 
+
+class kotLauncher:
     def __init__(self):
-        self.kotSharedCore = None
-        self.kotSharedStorage = None
-    #
-    # loop phase here
-    #
-    def loop(self):
-        clock = pygame.time.Clock()
-        while self.kotSharedCore.getRunning():
-            eventList = pygame.event.get()
-            # -- measure time for tick.
-            t0 = time.time()
-            self.kotSharedCore.mode[self.kotSharedCore.on_mode][0](eventList)
-            self.kotSharedCore.tickTime = time.time() - t0
-            # -- measure time for draw.
-            t0 = time.time()
-            self.kotSharedCore.mode[self.kotSharedCore.on_mode][1]()
-            self.kotSharedCore.drawTime = time.time() - t0
-            # -- setup the tick (aka FPS lock)
-            clock.tick(KOT_FPS_LOCK)
-    #
-    # init phase here
-    #
-    def __loadThisDirectory(self):
-        """__loadThisDirectory: load the directory, the directory is always
-        the ./game directory. If you want to customize it, configure the
-        hardcoded value here below."""
-        DIRECTORY_SET="./game"
-        if os.path.exists(DIRECTORY_SET):
-            return (os.path.abspath(DIRECTORY_SET)+"/")
-        else:
-            # NOTE: case the core folder of the game is not
-            # found, then just crash the game. This is expected
-            # to be done.
-            return panic("game not found",'no_exception')
-    def __preInit(self):
-        """__preInit: init the pygame module here."""
-        try: pygame.init()
-        except Exception as E:
-            return panic("pygame init error",E)
-    def __initDisplay(self):
-        """__initDisplay: init the display."""
-        self.kotSharedCore.window.size      = [800, 600]
-        self.kotSharedCore.window.caption   = "Kot DEMO"
-        self.kotSharedCore.window.windowInit()
-    def init(self):
-        """init: init all the required modules."""
-        self.__preInit()
-        # -- init the shared elements such as the storage and core. --
-        # the storage saves all the cache of the images and etc.
-        self.kotSharedStorage = kot.core.provider.kotSharedStorage(
-            self.__loadThisDirectory()  # -> return the directory for the game.
-        )
-        # core store the running and the modes.
-        self.kotSharedCore = kot.core.system.kotSharedCore()
-        # -- init the display here --
-        # the game display, but NOTE: the display may change
-        # during the next update.
-        self.__initDisplay()
-        # -- init the mode here --
-        # the modes are some possible environment that can be
-        # isolated from the modes.
-        self.cview_mode = kot.core.cview.cview(self.kotSharedCore,self.kotSharedStorage)
-        self.cview_mode.init()
-        self.mGame = kot.game.kotGame(self.kotSharedCore, self.kotSharedStorage)
-        self.mGame.init()
-        self.kotSharedCore.mode = [
-            [self.mGame.tick, self.mGame.draw],
-            [self.cview_mode.tick, self.cview_mode.draw]
+        """ launch everything on the project. """
+        self.kotSharedCore      = None
+        self.kotSharedStorage   = None
+
+    def __getMainGameFolder(self):
+        return os.path.abspath("./game")+"/"
+
+    def __searchInitialProperties(self):
+        """searchInitialProperties: setup the initial properties on the
+        main project."""
+        initialPropertiesJsonData = kot.utils.jsonLoad(self.kotSharedStorage.gamePath+"data/window.json")
+        kot.core.provider.buildWindowData(self.kotSharedStorage, initialPropertiesJsonData)
+        # -- zz --
+        # TODO also setup the initial window size
+        self.kotSharedCore.window.size = [800, 600]
+        self.kotSharedCore.setupWindowByData(initialPropertiesJsonData)
+    
+    def __setupModes(self):
+        """setupModes: setup the modes here."""
+        # setup the core here
+        self.kotMainWorld = kot.game.kotGame(self.kotSharedCore, self.kotSharedStorage)
+        self.kotMainWorld.init()
+        # setup the modes here
+        self.kotSharedCore.modes = [
+            ["kotMainWorld",    self.kotMainWorld.tick, self.kotMainWorld.draw],
+            ["kotNullMode",     None,                   None]
         ]
-    # quit phase here
+        self.kotSharedCore.onMode = 0
+    
+    def __pygameInit(self):
+        """pygameInit: init and do the black magic."""
+        pygame.init()
+    
+    def __pygameQuit(self):
+        """pygameQuit: quit and do black magic.""" 
+        pygame.quit()
+
+    def init(self):
+        """init: init the launcher."""
+        # init pygame
+        self.__pygameInit()
+        # init the modules
+        self.__pathMainGameDir  = self.__getMainGameFolder()
+        self.kotSharedStorage   = kot.core.provider.kotSharedStorage(self.__pathMainGameDir)
+        self.kotSharedCore      = kot.core.system.kotSharedCore()
+        # prepare to init the window, search the init properties
+        self.__searchInitialProperties()
+        # setup the window
+        self.kotSharedCore.window.windowInit()
+        # prepare to init the modes now.
+        self.__setupModes()
+        self.kotSharedCore.running = True
+    
+    def loop(self):
+        """loop: here is the most important part of the game, the loop part,
+        here is called the two functions, .tick() and .draw() of each mode."""
+        fpsLock = 60
+        clock   = pygame.time.Clock()
+        while self.kotSharedCore.running:
+            onMode      = self.kotSharedCore.onMode
+            eventList   = pygame.event.get()
+            # NOTE measure the time of each function
+            timeTakenByTick = time.time()
+            self.kotSharedCore.modes[onMode][1](eventList)
+            timeTakenByTick = time.time() - timeTakenByTick
+            timeTakenByDraw = time.time()
+            self.kotSharedCore.modes[onMode][2]()
+            timeTakenByDraw = time.time() - timeTakenByDraw
+            # register on the statistics
+            self.kotSharedCore.tickTime = timeTakenByTick
+            self.kotSharedCore.drawTime = timeTakenByDraw
+            clock.tick(fpsLock)
+    
     def quit(self):
-        pass
-# -- init the wrapper here. --
-def wrapper():
-    kotLaunchedInstance = kotInstance()
-    kotLaunchedInstance.init()
-    kotLaunchedInstance.loop()
-wrapper()
+        """quit: quit the launcher."""
+        self.__pygameQuit()
+
+# -- zz --
+
+def launch():
+    kotInstance = kotLauncher()
+    kotInstance.init()
+    kotInstance.loop()
+    kotInstance.quit()
+
+# NOTE launch the project, case is main.
+if __name__ == '__main__': launch()
