@@ -1,20 +1,34 @@
 # import some necessesary modules.
+import os, sys
 import pygame
-import os
+
 # from kot.
 from kot.utils import jsonLoad
+from kot.debug import debug
 
 # constants
 KOT_CACHE_MAX_STORE_TIME    = 30
 KOT_CONTENT_TYPE_IMAGE      = 'image'
 KOT_CONTENT_TYPE_SPRITE     = 'sprite'
 
+# NOTE this is in case you want to debug this file
+DEBUG_THIS_FILE = True
+
+# -- zz --
+
+def buildWindowData(kotSharedStorageReference, Data):
+    Data['icon'] = kotSharedStorageReference.getContentBySpecification(Data['icon'])
+
+# -- zz --
+
 class kotSharedStorage:
     
     def __init__(self, gamePath):
         self.gamePath = gamePath
         self.cacheStorage = {}
-        self.debug = None
+        # prepare debug in case enabled
+        self.debug = debug.kotDebug(output=sys.stdout,logFrom='kotSharedStorage')
+        self.debug.enabled = DEBUG_THIS_FILE
 
     #
     # -- cache manager --
@@ -36,6 +50,7 @@ class kotSharedStorage:
         for cacheKey in self.cacheStorage.keys():
             thisCacheTime = self.cacheStorage[cacheKey][1] 
             if pygame.time.get_ticks() >= thisCacheTime and thisCacheTime != -1:
+                self.debug.write("cache cleaned from memory: %s" % cacheKey)
                 del self.cacheStorage[cacheKey]
                 return
 
@@ -51,7 +66,9 @@ class kotSharedStorage:
             # don't update the time if the time limit has reached up.
             timeOnCache = self.cacheStorage[cacheKey][1]
             if timeOnCache != -1 and timeOnCache < (1000 * 120):
+                oldTimeLimit = self.cacheStorage[cacheKey][1]
                 self.cacheStorage[cacheKey][1] += (1000 * (KOT_CACHE_MAX_STORE_TIME//2))
+                self.debug.write("cache [%s] time %d -> %d!" % (cacheKey,oldTimeLimit,self.cacheStorage[cacheKey][1]))
             return self.cacheStorage[cacheKey][0]
         else:
             return False
@@ -67,6 +84,8 @@ class kotSharedStorage:
         # try to get the element from a possible cache.
         cacheKey    = "image_%s_%s" % (fromDirectory,name)
         fromCache   = self.getCache(cacheKey)
+        # debug here
+        self.debug.write("request: [cache='%s', realPath='%s']" % (cacheKey,pathDir))
         if fromCache:
             return fromCache
         # if the element is not cached, then load it manually.
@@ -120,6 +139,7 @@ class kotSharedStorage:
         fontPath    = self.gamePath + FONT_PATH_DEFAULT + fontName + ".dat"
         cacheKey    = "font_%s:%d" % (fontName, fontSize)
         fromCache   = self.getCache(cacheKey)
+        self.debug.write("request: [cache='%s', realPath='%s']" % (cacheKey,fontPath))
         if not fromCache:
             # then load the font from the disk.
             font = None
