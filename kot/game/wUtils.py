@@ -14,9 +14,6 @@ def generateUniqueId(length=64):
             whatRange   = random.randint(0,len(ranges)-1)
             rangeSet    = ranges[whatRange]
             whatId      += chr(random.randint(rangeSet[0],rangeSet[1]))
-        if whatId in __uniqueKeysAlreadyGenerated:
-            continue
-        else:
-            __uniqueKeysAlreadyGenerated.append(whatId)
-            break
+        if whatId in __uniqueKeysAlreadyGenerated: continue
+        else: __uniqueKeysAlreadyGenerated.append(whatId) ; break
     return whatId
