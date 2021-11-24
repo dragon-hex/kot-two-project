@@ -19,5 +19,4 @@ def generateUniqueId(length=64):
         else:
             __uniqueKeysAlreadyGenerated.append(whatId)
             break
-    print(__uniqueKeysAlreadyGenerated)
     return whatId
